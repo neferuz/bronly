@@ -1,0 +1,11 @@
+{
+  "name": "@bronly/tsconfig",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared TSConfig templates for Bronly",
+  "files": [
+    "base.json",
+    "nextjs.json",
+    "node.json"
+  ]
+}

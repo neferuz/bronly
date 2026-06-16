@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-evolventa), system-ui, -apple-system, sans-serif;
+  --font-evolventa: var(--font-evolventa), system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  
+  --primary: #ff5a1f;
+  --primary-hover: #e04f1a;
+  --primary-glow: rgba(255, 90, 31, 0.08);
+  --primary-glow-ring: rgba(255, 90, 31, 0.2);
+  
+  --border: #e2e8f0;
+  --card-bg: #ffffff;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-evolventa), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Custom thin scrollbar for mobile/mini-app interface */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Premium smooth transitions & micro-animations */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Smooth fade-in keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Ken Burns slow background zoom & pan effect */
+@keyframes kenBurns {
+  0% {
+    transform: scale(1.02) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.1) translate(-0.5%, -0.5%);
+  }
+  100% {
+    transform: scale(1.02) translate(0, 0);
+  }
+}
+
+.animate-ken-burns {
+  animation: kenBurns 20s ease-in-out infinite;
+}
+
+/* Premium springy transitions */
+.springy-transition {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.springy-active:active {
+  transform: scale(0.95);
+}
+
+/* Glassmorphic border glow and hover shadows */
+.glass-glow-orange {
+  box-shadow: 0 8px 32px 0 var(--primary-glow), inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.glass-glow-white {
+  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.06), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+

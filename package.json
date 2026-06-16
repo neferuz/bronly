@@ -1,0 +1,20 @@
+{
+  "name": "bronly-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bronly Multi-Project Workspace and Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "start": "npm run start --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
