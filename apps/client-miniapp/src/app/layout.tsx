@@ -39,14 +39,12 @@ export default function RootLayout({
       className={`${evolventa.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <Script
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
-        />
-      </head>
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-800 font-sans" suppressHydrationWarning>
         {children}
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
