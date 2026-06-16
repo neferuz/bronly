@@ -58,6 +58,7 @@ if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origin_regex=r"https?://.*\.bronly-hub\.uz|https?://bronly-hub\.uz",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
