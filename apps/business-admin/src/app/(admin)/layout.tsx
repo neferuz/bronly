@@ -51,7 +51,7 @@ export default function AdminLayout({
         <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
 
         {/* Dynamic Page Workspace Content */}
-        <main className="flex-1 px-4 xl:px-6 pt-4 xl:pt-6 pb-6 overflow-y-auto">
+        <main className="flex-1 px-4 xl:px-6 pt-4 xl:pt-6 pb-4 xl:pb-6 overflow-y-auto">
           {children}
         </main>
       </div>

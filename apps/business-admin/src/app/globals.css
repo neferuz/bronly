@@ -18,6 +18,11 @@
   --card-bg: #ffffff;
 }
 
+html, body {
+  overscroll-behavior: none;
+  height: 100%;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -73,4 +78,8 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+main {
+  overscroll-behavior-y: contain;
 }
