@@ -109,93 +109,110 @@ export default function ClientMiniApp() {
   // Fetch business details and resources on mount + load client credentials (TG WebApp / URL params / localStorage)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      let bId = params.get('business_id') || params.get('b');
-      
-      if (!bId && window.location.pathname && window.location.pathname !== '/') {
-        const pathParts = window.location.pathname.split('/').filter(Boolean);
-        const systemRoutes = ['profile', 'history', 'review'];
-        if (pathParts.length > 0 && !systemRoutes.includes(pathParts[0])) {
-          bId = pathParts[0];
+      try {
+        const params = new URLSearchParams(window.location.search);
+        let bId = params.get('business_id') || params.get('b');
+        
+        if (!bId && window.location.pathname && window.location.pathname !== '/') {
+          const pathParts = window.location.pathname.split('/').filter(Boolean);
+          const systemRoutes = ['profile', 'history', 'review'];
+          if (pathParts.length > 0 && !systemRoutes.includes(pathParts[0])) {
+            bId = pathParts[0];
+          }
         }
-      }
 
-      if (!bId) {
-        bId = localStorage.getItem('last_business_id') || '';
-      } else {
-        bId = bId.replace(/[^a-zA-Z0-9_-]/g, '');
-        localStorage.setItem('last_business_id', bId);
-      }
-      setBusinessId(bId);
+        // Safe localStorage access
+        const getStorage = (key: string) => {
+          try { return localStorage.getItem(key); } catch(e) { return null; }
+        };
+        const setStorage = (key: string, val: string) => {
+          try { localStorage.setItem(key, val); } catch(e) {}
+        };
 
-      // 1. Try to read from query params
-      const qName = params.get('name') || params.get('client_name') || params.get('username') || params.get('n');
-      const qPhone = params.get('phone') || params.get('client_phone') || params.get('p');
-      const qTgId = params.get('tg_id') || params.get('telegram_id') || params.get('uid');
+        if (!bId) {
+          bId = getStorage('last_business_id') || '';
+        } else {
+          bId = bId.replace(/[^a-zA-Z0-9_-]/g, '');
+          setStorage('last_business_id', bId);
+        }
+        setBusinessId(bId);
 
-      let finalName = qName || '';
-      let finalPhone = qPhone || '';
-      let finalTgId = qTgId || '';
-      let finalPhotoUrl = '';
+        // 1. Try to read from query params
+        const qName = params.get('name') || params.get('client_name') || params.get('username') || params.get('n');
+        const qPhone = params.get('phone') || params.get('client_phone') || params.get('p');
+        const qTgId = params.get('tg_id') || params.get('telegram_id') || params.get('uid');
 
-      // 2. Try to read from Telegram WebApp
-      const tg = (window as any).Telegram?.WebApp;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-        const tgUser = tg.initDataUnsafe?.user;
-        if (tgUser) {
-          if (!finalName) {
-            finalName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
-            if (!finalName && tgUser.username) {
-              finalName = tgUser.username;
+        let finalName = qName || '';
+        let finalPhone = qPhone || '';
+        let finalTgId = qTgId || '';
+        let finalPhotoUrl = '';
+
+        // 2. Try to read from Telegram WebApp
+        const tg = (window as any).Telegram?.WebApp;
+        if (tg) {
+          if (typeof tg.ready === 'function') {
+            try { tg.ready(); } catch(e) {}
+          }
+          if (typeof tg.expand === 'function') {
+            try { tg.expand(); } catch(e) {}
+          }
+          const tgUser = tg.initDataUnsafe?.user;
+          if (tgUser) {
+            if (!finalName) {
+              finalName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
+              if (!finalName && tgUser.username) {
+                finalName = tgUser.username;
+              }
+            }
+            if (!finalTgId) {
+              finalTgId = String(tgUser.id);
+            }
+            if (tgUser.photo_url) {
+              finalPhotoUrl = tgUser.photo_url;
             }
           }
-          if (!finalTgId) {
-            finalTgId = String(tgUser.id);
-          }
-          if (tgUser.photo_url) {
-            finalPhotoUrl = tgUser.photo_url;
-          }
         }
-      }
 
-      // 3. Fallback to localStorage if still empty
-      if (!finalName) {
-        finalName = localStorage.getItem('client_name') || '';
-      }
-      if (!finalPhone) {
-        finalPhone = localStorage.getItem('client_phone') || '';
-      }
-      if (!finalTgId) {
-        finalTgId = localStorage.getItem('client_telegram_id') || '';
-      }
-      if (!finalPhotoUrl) {
-        finalPhotoUrl = localStorage.getItem('client_photo_url') || '';
-      }
+        // 3. Fallback to localStorage if still empty
+        if (!finalName) {
+          finalName = getStorage('client_name') || '';
+        }
+        if (!finalPhone) {
+          finalPhone = getStorage('client_phone') || '';
+        }
+        if (!finalTgId) {
+          finalTgId = getStorage('client_telegram_id') || '';
+        }
+        if (!finalPhotoUrl) {
+          finalPhotoUrl = getStorage('client_photo_url') || '';
+        }
 
-      // 4. Default mock data fallback for testing/local PC (prevent blocking empty inputs)
-      if (!finalName) {
-        finalName = 'Иван';
-      }
-      if (!finalPhone) {
-        finalPhone = '+998 90 123-45-67';
-      }
+        // 4. Default mock data fallback for testing/local PC (prevent blocking empty inputs)
+        if (!finalName) {
+          finalName = 'Иван';
+        }
+        if (!finalPhone) {
+          finalPhone = '+998 90 123-45-67';
+        }
 
-      // Update state and localStorage
-      setClientName(finalName);
-      setClientPhone(finalPhone);
-      if (finalTgId) {
-        setClientTelegramId(finalTgId);
-        localStorage.setItem('client_telegram_id', finalTgId);
+        // Update state and localStorage
+        setClientName(finalName);
+        setClientPhone(finalPhone);
+        if (finalTgId) {
+          setClientTelegramId(finalTgId);
+          setStorage('client_telegram_id', finalTgId);
+        }
+        if (finalPhotoUrl) {
+          setClientPhotoUrl(finalPhotoUrl);
+          setStorage('client_photo_url', finalPhotoUrl);
+        }
+        setStorage('client_name', finalName);
+        setStorage('client_phone', finalPhone);
+      } catch (err) {
+        console.error("Error in mount useEffect:", err);
+      } finally {
+        setIsParamsChecked(true);
       }
-      if (finalPhotoUrl) {
-        setClientPhotoUrl(finalPhotoUrl);
-        localStorage.setItem('client_photo_url', finalPhotoUrl);
-      }
-      localStorage.setItem('client_name', finalName);
-      localStorage.setItem('client_phone', finalPhone);
-      setIsParamsChecked(true);
     }
   }, []);
 
@@ -215,16 +232,18 @@ export default function ClientMiniApp() {
 
         // Save active business details to localStorage for subpages (history, profile)
         if (typeof window !== 'undefined') {
-          localStorage.setItem('mini_app_settings', JSON.stringify({
-            primaryColor: dataBus.primary_color || '#ff5a1f',
-            name: dataBus.name || 'Elite Barber',
-            logo: dataBus.logo || 'EB',
-            coverImage: dataBus.cover_image || '',
-            phone: dataBus.phone || '',
-            address: dataBus.address || '',
-            telegram: dataBus.telegram || '',
-            instagram: dataBus.instagram || ''
-          }));
+          try {
+            localStorage.setItem('mini_app_settings', JSON.stringify({
+              primaryColor: dataBus.primary_color || '#ff5a1f',
+              name: dataBus.name || 'Elite Barber',
+              logo: dataBus.logo || 'EB',
+              coverImage: dataBus.cover_image || '',
+              phone: dataBus.phone || '',
+              address: dataBus.address || '',
+              telegram: dataBus.telegram || '',
+              instagram: dataBus.instagram || ''
+            }));
+          } catch (e) {}
         }
 
         // Apply primary color branding dynamically
@@ -367,8 +386,10 @@ export default function ClientMiniApp() {
 
       // Save client details locally
       if (typeof window !== 'undefined') {
-        localStorage.setItem('client_name', clientName);
-        localStorage.setItem('client_phone', clientPhone);
+        try {
+          localStorage.setItem('client_name', clientName);
+          localStorage.setItem('client_phone', clientPhone);
+        } catch (e) {}
       }
 
       // Show success toast and redirect to history
