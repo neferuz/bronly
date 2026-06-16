@@ -90,11 +90,17 @@ async def telegram_webhook(
         
         if text.startswith("/start"):
             if bot_type == "client":
+                user_info = msg.get("from", {})
+                first_name = user_info.get("first_name", "гость")
                 welcome_msg = (
-                    f"Привет! Добро пожаловать в <b>{business.name}</b>.\n\n"
-                    f"Здесь вы можете быстро записаться на наши услуги онлайн через удобное мини-приложение прямо в Telegram! ✨"
+                    f"👋 <b>Здравствуйте, {first_name}!</b>\n\n"
+                    f"Добро пожаловать в <b>{business.name}</b>.\n\n"
+                    f"В этом боте вы можете быстро и удобно записаться к нам на услуги онлайн! ✨\n\n"
+                    f"Выберите услуги, подходящую дату и вашего любимого мастера.\n\n"
+                    f"Нажмите на кнопку ниже, чтобы открыть онлайн-запись: 👇"
                 )
-                miniapp_url = f"{settings.CLIENT_MINIAPP_URL}/?b={business_id}&tg_id={chat_id}"
+                business_identifier = business.slug if business.slug else business_id
+                miniapp_url = f"{settings.CLIENT_MINIAPP_URL}/{business_identifier}?tg_id={chat_id}"
                 reply_markup = {
                     "inline_keyboard": [
                         [
