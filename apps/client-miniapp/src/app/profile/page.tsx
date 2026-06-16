@@ -73,6 +73,26 @@ export default function ProfilePage() {
       setClientName(name);
       setClientPhone(userPhone);
       setClientPhotoUrl(photoUrl);
+
+      // 4. Request Telegram contact if missing/mock
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg && (!userPhone || userPhone === '+998 90 123-45-67')) {
+        if (typeof tg.requestContact === 'function') {
+          try {
+            tg.requestContact((sent: boolean, response: any) => {
+              if (sent) {
+                const phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+                if (phoneNum) {
+                  setClientPhone(phoneNum);
+                  localStorage.setItem('client_phone', phoneNum);
+                }
+              }
+            });
+          } catch (contactErr) {
+            console.error("Failed to request contact in profile:", contactErr);
+          }
+        }
+      }
     }
   }, []);
 

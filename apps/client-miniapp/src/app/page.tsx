@@ -169,6 +169,26 @@ export default function ClientMiniApp() {
               finalPhotoUrl = tgUser.photo_url;
             }
           }
+          
+          // Request contact details if missing or mock
+          const savedPhone = getStorage('client_phone');
+          if (!finalPhone && (!savedPhone || savedPhone === '+998 90 123-45-67')) {
+            if (typeof tg.requestContact === 'function') {
+              try {
+                tg.requestContact((sent: boolean, response: any) => {
+                  if (sent) {
+                    const phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+                    if (phoneNum) {
+                      setClientPhone(phoneNum);
+                      setStorage('client_phone', phoneNum);
+                    }
+                  }
+                });
+              } catch (contactErr) {
+                console.error("Failed to request contact:", contactErr);
+              }
+            }
+          }
         }
 
         // 3. Fallback to localStorage if still empty
