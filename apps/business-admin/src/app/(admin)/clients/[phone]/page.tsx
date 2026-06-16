@@ -204,7 +204,7 @@ export default function ClientDetails() {
             href={
               clientInfo.telegramId && clientInfo.telegramId.startsWith('@')
                 ? `https://t.me/${clientInfo.telegramId.substring(1)}`
-                : `https://t.me/${clientInfo.phone.replace(/\D/g, '')}`
+                : `https://t.me/+${clientInfo.phone.replace(/\D/g, '')}`
             }
             target="_blank"
             rel="noopener noreferrer"

@@ -909,7 +909,7 @@ export default function Bookings() {
                   href={
                     selectedBooking.clientTelegramId && selectedBooking.clientTelegramId.startsWith('@')
                       ? `https://t.me/${selectedBooking.clientTelegramId.substring(1)}`
-                      : `https://t.me/${selectedBooking.clientPhone.replace(/\D/g, '')}`
+                      : `https://t.me/+${selectedBooking.clientPhone.replace(/\D/g, '')}`
                   }
                   target="_blank"
                   rel="noopener noreferrer"

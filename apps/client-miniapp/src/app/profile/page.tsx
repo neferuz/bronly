@@ -67,15 +67,40 @@ export default function ProfilePage() {
       }
 
       // 3. Load client details
-      const name = localStorage.getItem('client_name') || 'Гость';
-      const userPhone = localStorage.getItem('client_phone') || '';
-      const photoUrl = localStorage.getItem('client_photo_url') || '';
+      let name = localStorage.getItem('client_name') || 'Гость';
+      let userPhone = localStorage.getItem('client_phone') || '';
+      let photoUrl = localStorage.getItem('client_photo_url') || '';
+
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg) {
+        if (typeof tg.ready === 'function') {
+          try { tg.ready(); } catch(e) {}
+        }
+        if (typeof tg.expand === 'function') {
+          try { tg.expand(); } catch(e) {}
+        }
+        const tgUser = tg.initDataUnsafe?.user;
+        if (tgUser) {
+          const tgName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ');
+          if (tgName) {
+            name = tgName;
+            localStorage.setItem('client_name', tgName);
+          } else if (tgUser.username) {
+            name = tgUser.username;
+            localStorage.setItem('client_name', tgUser.username);
+          }
+          if (tgUser.photo_url) {
+            photoUrl = tgUser.photo_url;
+            localStorage.setItem('client_photo_url', tgUser.photo_url);
+          }
+        }
+      }
+
       setClientName(name);
       setClientPhone(userPhone);
       setClientPhotoUrl(photoUrl);
 
       // 4. Request Telegram contact if missing/mock
-      const tg = (window as any).Telegram?.WebApp;
       if (tg && (!userPhone || userPhone === '+998 90 123-45-67')) {
         if (typeof tg.requestContact === 'function') {
           try {
