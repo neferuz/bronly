@@ -28,6 +28,7 @@ def upgrade() -> None:
     sa.Column('business_id', sa.String(), nullable=False),
     sa.Column('rating', sa.Integer(), nullable=False),
     sa.Column('comment', sa.String(), nullable=True),
+    sa.Column('reply_comment', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['booking_id'], ['bookings.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['business_id'], ['businesses.id'], ondelete='CASCADE'),
