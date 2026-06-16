@@ -85,6 +85,7 @@ export default function MasterDashboard() {
 
         const qM = params.get('m') || params.get('master_id');
         const qTg = params.get('tg_id') || params.get('telegram_id');
+        const qStartParam = params.get('tgWebAppStartParam') || params.get('start_param') || params.get('startapp') || '';
 
         const tg = (window as any).Telegram?.WebApp;
         let tgStartParam = '';
@@ -93,10 +94,12 @@ export default function MasterDashboard() {
         if (tg) {
           tg.ready();
           tg.expand();
-          tgStartParam = tg.initDataUnsafe?.start_param || '';
+          tgStartParam = tg.initDataUnsafe?.start_param || qStartParam || '';
           if (tg.initDataUnsafe?.user) {
             tgUserId = String(tg.initDataUnsafe.user.id);
           }
+        } else {
+          tgStartParam = qStartParam;
         }
 
         let finalB = qB || '';
@@ -107,7 +110,14 @@ export default function MasterDashboard() {
           const parts = tgStartParam.split('_');
           if (parts.length >= 2) {
             finalM = parts[parts.length - 1];
-            finalB = parts.slice(0, -1).join('_');
+            
+            // Check if the first part is a valid UUID
+            const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+            if (uuidPattern.test(parts[0])) {
+              finalB = parts[0];
+            } else {
+              finalB = parts.slice(0, -1).join('_');
+            }
           }
         }
 
