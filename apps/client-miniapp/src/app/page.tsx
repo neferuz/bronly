@@ -1083,7 +1083,7 @@ export default function ClientMiniApp() {
                           onClick={() => {
                             const tg = (window as any).Telegram?.WebApp;
                             if (tg && typeof tg.requestContact === 'function') {
-                              tg.requestContact((sent, response) => {
+                              tg.requestContact((sent: boolean, response: any) => {
                                 if (sent) {
                                   let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
                                   if (phoneNum) {
