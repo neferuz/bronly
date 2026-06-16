@@ -1,5 +1,8 @@
 from app.core.database import SessionLocal
 from app.models.business import Business
+from app.models.master import Master
+from app.models.service import Service
+from app.models.booking import Booking
 from app.core.telegram_bot import set_bot_webhook
 from app.core.config import settings
 
