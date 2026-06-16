@@ -81,10 +81,28 @@ export default function ProfilePage() {
           try {
             tg.requestContact((sent: boolean, response: any) => {
               if (sent) {
-                const phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+                let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
                 if (phoneNum) {
+                  if (!phoneNum.startsWith('+')) {
+                    phoneNum = '+' + phoneNum;
+                  }
                   setClientPhone(phoneNum);
                   localStorage.setItem('client_phone', phoneNum);
+                  alert('✅ Номер телефона успешно привязан!');
+                  
+                  const tgUser = tg.initDataUnsafe?.user;
+                  const chatId = tgUser?.id ? String(tgUser.id) : '';
+                  if (chatId && bId) {
+                    fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        business_id: bId,
+                        chat_id: chatId,
+                        phone: phoneNum
+                      })
+                    }).catch(err => console.error("Failed to send contact shared notification in profile:", err));
+                  }
                 }
               }
             });

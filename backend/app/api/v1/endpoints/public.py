@@ -392,3 +392,31 @@ def read_master_reviews(master_id: str, db: Session = Depends(get_db)):
     reviews = db.query(Review).filter(Review.master_id == master_id).order_by(Review.created_at.desc()).all()
     return reviews
 
+
+class ContactSharedNotification(BaseModel):
+    business_id: str
+    chat_id: str
+    phone: str
+
+@router.post("/telegram/notify-contact-shared")
+def notify_contact_shared(
+    data: ContactSharedNotification,
+    db: Session = Depends(get_db)
+):
+    resolved_id = resolve_business_id(db, data.business_id)
+    business = crud_business.get(db, id=resolved_id)
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
+    if not business.client_bot_token:
+        raise HTTPException(status_code=400, detail="Business client bot token not configured")
+    
+    message = (
+        f"✅ <b>Спасибо большое!</b>\n\n"
+        f"Ваш номер телефона <b>{data.phone}</b> успешно сохранен. "
+        f"Теперь вы можете быстро и удобно записываться к нам онлайн через Mini App! 🚀"
+    )
+    from app.core.telegram_bot import send_telegram_message
+    send_telegram_message(business.client_bot_token, data.chat_id, message)
+    return {"ok": True}
+
+

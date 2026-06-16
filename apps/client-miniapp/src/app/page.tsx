@@ -177,10 +177,27 @@ export default function ClientMiniApp() {
               try {
                 tg.requestContact((sent: boolean, response: any) => {
                   if (sent) {
-                    const phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+                    let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
                     if (phoneNum) {
+                      if (!phoneNum.startsWith('+')) {
+                        phoneNum = '+' + phoneNum;
+                      }
                       setClientPhone(phoneNum);
                       setStorage('client_phone', phoneNum);
+                      showToast('✅ Номер телефона успешно привязан!');
+                      
+                      const chatId = finalTgId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                      if (chatId && bId) {
+                        fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            business_id: bId,
+                            chat_id: chatId,
+                            phone: phoneNum
+                          })
+                        }).catch(err => console.error("Failed to send contact shared notification:", err));
+                      }
                     }
                   }
                 });
