@@ -260,7 +260,7 @@ export default function Calendar() {
   };
 
   return (
-    <div className="space-y-6 w-full font-sans relative pb-8">
+    <div className="space-y-6 w-full font-sans relative pb-4 xl:pb-8">
       
       {/* Top 50/50 Grid: Work Shift Controls and Month Grid Selector */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">

@@ -41,17 +41,17 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex w-full h-screen overflow-hidden relative">
+    <div className="flex w-full min-h-screen xl:h-screen xl:overflow-hidden relative">
       {/* Sidebar Left */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Scrollable Main Area Right */}
-      <div className="flex-1 flex flex-col pl-0 xl:pl-[240px] h-full overflow-hidden">
+      <div className="flex-1 flex flex-col pl-0 xl:pl-[240px] min-h-screen xl:h-full xl:overflow-hidden">
         {/* Top Sticky Header */}
         <Header onOpenSidebar={() => setIsSidebarOpen(true)} />
 
         {/* Dynamic Page Workspace Content */}
-        <main className="flex-1 px-4 xl:px-6 pt-4 xl:pt-6 pb-6 overflow-y-auto">
+        <main className="flex-1 px-4 xl:px-6 pt-4 xl:pt-6 pb-4 xl:pb-6 xl:overflow-y-auto">
           {children}
         </main>
       </div>
