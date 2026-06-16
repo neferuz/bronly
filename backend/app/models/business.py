@@ -8,6 +8,7 @@ class Business(Base):
     
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)
+    slug = Column(String, unique=True, index=True, nullable=True)
     owner_name = Column(String, nullable=False)
     owner_email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)

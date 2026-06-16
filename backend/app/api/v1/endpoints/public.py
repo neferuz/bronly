@@ -15,6 +15,7 @@ from app.schemas.booking import BookingOut, BookingCreate
 from app.models.booking import Booking
 from app.models.master import Master
 from app.models.review import Review
+from app.models.business import Business
 from app.schemas.review import ReviewCreate, ReviewOut
 from app.core.telegram_bot import notify_booking_created, notify_booking_status_updated
 
@@ -51,12 +52,24 @@ class MasterActiveUpdate(BaseModel):
     is_active: bool
     telegram_id: str
 
+def resolve_business_id(db: Session, business_id: str) -> str:
+    # 1. First check if it matches id
+    business = db.query(Business).filter(Business.id == business_id).first()
+    if business:
+        return business.id
+    # 2. Check if it matches slug
+    business_by_slug = db.query(Business).filter(Business.slug == business_id).first()
+    if business_by_slug:
+        return business_by_slug.id
+    return business_id
+
 @router.get("/businesses/{business_id}", response_model=BusinessOut)
 def read_public_business(business_id: str, db: Session = Depends(get_db)):
     """
     Get public info/settings of a business for branding.
     """
-    business = crud_business.get(db, id=business_id)
+    resolved_id = resolve_business_id(db, business_id)
+    business = crud_business.get(db, id=resolved_id)
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
     if not business.is_active:
@@ -68,8 +81,9 @@ def read_public_services(business_id: str, db: Session = Depends(get_db)):
     """
     Get active services of a business.
     """
+    resolved_id = resolve_business_id(db, business_id)
     services = db.query(crud_service.model).filter(
-        crud_service.model.business_id == business_id,
+        crud_service.model.business_id == resolved_id,
         crud_service.model.is_active == True
     ).all()
     return services
@@ -79,8 +93,9 @@ def read_public_masters(business_id: str, db: Session = Depends(get_db)):
     """
     Get active masters of a business.
     """
+    resolved_id = resolve_business_id(db, business_id)
     masters = db.query(crud_master.model).filter(
-        crud_master.model.business_id == business_id,
+        crud_master.model.business_id == resolved_id,
         crud_master.model.is_active == True
     ).all()
     return masters
@@ -95,8 +110,9 @@ def read_busy_slots(
     """
     Get list of busy times (HH:MM) for a master on a specific date.
     """
+    resolved_id = resolve_business_id(db, business_id)
     bookings = db.query(Booking).filter(
-        Booking.business_id == business_id,
+        Booking.business_id == resolved_id,
         Booking.master_id == master_id,
         Booking.date == date,
         Booking.status.in_(["new", "confirmed", "completed"])
@@ -112,24 +128,25 @@ def create_public_booking(
     """
     Create a new booking as a guest client.
     """
+    resolved_id = resolve_business_id(db, booking_in.business_id)
     # 1. Verify business exists
-    business = crud_business.get(db, id=booking_in.business_id)
+    business = crud_business.get(db, id=resolved_id)
     if not business or not business.is_active:
         raise HTTPException(status_code=404, detail="Business not found or inactive")
         
     # 2. Verify master exists and belongs to the business
     master = crud_master.get(db, id=booking_in.master_id)
-    if not master or master.business_id != booking_in.business_id or not master.is_active:
+    if not master or master.business_id != resolved_id or not master.is_active:
         raise HTTPException(status_code=404, detail="Master not found or inactive")
         
     # 3. Verify service exists and belongs to the business
     service = crud_service.get(db, id=booking_in.service_id)
-    if not service or service.business_id != booking_in.business_id or not service.is_active:
+    if not service or service.business_id != resolved_id or not service.is_active:
         raise HTTPException(status_code=404, detail="Service not found or inactive")
         
     # 4. Check if slot is already taken
     existing_booking = db.query(Booking).filter(
-        Booking.business_id == booking_in.business_id,
+        Booking.business_id == resolved_id,
         Booking.master_id == booking_in.master_id,
         Booking.date == booking_in.date,
         Booking.time == booking_in.time,
@@ -150,7 +167,7 @@ def create_public_booking(
         price=service.price,
         comment=booking_in.comment,
         status="new",
-        business_id=booking_in.business_id,
+        business_id=resolved_id,
         master_id=booking_in.master_id
     )
     
@@ -186,9 +203,10 @@ def verify_master(
     telegram_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    resolved_id = resolve_business_id(db, business_id)
     master = db.query(Master).filter(
         Master.id == master_id,
-        Master.business_id == business_id
+        Master.business_id == resolved_id
     ).first()
     if not master:
         raise HTTPException(status_code=404, detail="Мастер не найден")
@@ -209,9 +227,10 @@ def link_master(
     req: MasterLinkRequest,
     db: Session = Depends(get_db)
 ):
+    resolved_id = resolve_business_id(db, req.business_id)
     master = db.query(Master).filter(
         Master.id == req.master_id,
-        Master.business_id == req.business_id
+        Master.business_id == resolved_id
     ).first()
     if not master:
         raise HTTPException(status_code=404, detail="Мастер не найден")
@@ -233,15 +252,16 @@ def read_master_bookings(
     date: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
+    resolved_id = resolve_business_id(db, business_id)
     master = db.query(Master).filter(Master.id == master_id).first()
-    if not master or master.business_id != business_id:
+    if not master or master.business_id != resolved_id:
         raise HTTPException(status_code=404, detail="Мастер не найден")
         
     if master.telegram_id != telegram_id:
         raise HTTPException(status_code=403, detail="Доступ запрещен")
         
     query = db.query(Booking).filter(
-        Booking.business_id == business_id,
+        Booking.business_id == resolved_id,
         Booking.master_id == master_id
     )
     if date and date != "all":

@@ -476,15 +476,6 @@ export default function ClientMiniApp() {
                 : `Не удалось загрузить данные салона с ID "${businessId}". Пожалуйста, убедитесь, что ссылка верна.`}
             </p>
           </div>
-          <div className="pt-2">
-            <button
-              onClick={() => window.location.href = '/?business_id=b1'}
-              style={{ backgroundColor: "#ff5a1f" }} 
-              className="w-full py-3 rounded-2xl text-white font-bold text-xs smooth-transition cursor-pointer active:scale-95 shadow-none border-none font-evolventa hover:brightness-95"
-            >
-              Открыть демо-салон
-            </button>
-          </div>
         </div>
       </div>
     );

@@ -14,6 +14,7 @@ class CRUDBusiness(CRUDBase[Business, BusinessCreate, BusinessUpdate]):
         db_obj = Business(
             id=str(uuid.uuid4()),
             name=obj_in.name,
+            slug=obj_in.slug or (obj_in.name.split(' ')[0].lower() if obj_in.name else None),
             owner_name=obj_in.owner_name,
             owner_email=obj_in.owner_email,
             hashed_password=get_password_hash(obj_in.password),

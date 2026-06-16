@@ -6,6 +6,7 @@ import json
 
 class BusinessBase(BaseModel):
     name: str
+    slug: Optional[str] = None
     owner_name: str
     owner_email: EmailStr
     owner_telegram: Optional[str] = None
@@ -67,6 +68,7 @@ class BusinessCreate(BusinessBase):
 
 class BusinessUpdate(BaseModel):
     name: Optional[str] = None
+    slug: Optional[str] = None
     owner_name: Optional[str] = None
     owner_email: Optional[EmailStr] = None
     owner_telegram: Optional[str] = None
