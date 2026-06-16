@@ -129,13 +129,11 @@ export default function ClientMiniApp() {
           try { localStorage.setItem(key, val); } catch(e) {}
         };
 
-        if (!bId) {
-          bId = getStorage('last_business_id') || '';
-        } else {
+        if (bId) {
           bId = bId.replace(/[^a-zA-Z0-9_-]/g, '');
           setStorage('last_business_id', bId);
         }
-        setBusinessId(bId);
+        setBusinessId(bId || '');
 
         // 1. Try to read from query params
         const qName = params.get('name') || params.get('client_name') || params.get('username') || params.get('n');
