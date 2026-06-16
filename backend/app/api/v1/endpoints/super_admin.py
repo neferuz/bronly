@@ -54,6 +54,7 @@ class BusinessBranchOut(BaseModel):
 
 class BusinessRegister(BaseModel):
     name: str
+    slug: Optional[str] = None
     owner_name: str
     owner_email: EmailStr
     owner_phone: str
@@ -170,6 +171,7 @@ def register_business_by_admin(
         
     obj_in = BusinessCreate(
         name=body.name,
+        slug=body.slug,
         owner_name=body.owner_name,
         owner_email=body.owner_email,
         phone=body.owner_phone,

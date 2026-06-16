@@ -6,6 +6,7 @@ import { useToast } from '../components/ui/Toast';
 export interface BusinessBranch {
   id: string;
   name: string;
+  slug: string;
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string;
@@ -35,6 +36,7 @@ export interface PlatformStats {
 
 export interface BusinessRegisterInput {
   name: string;
+  slug?: string;
   ownerName: string;
   ownerEmail: string;
   ownerPhone: string;
@@ -101,6 +103,7 @@ export const SuperAdminProvider: React.FC<{ children: ReactNode }> = ({ children
       const mappedBusinesses: BusinessBranch[] = bizData.map((b: any) => ({
         id: b.id,
         name: b.name,
+        slug: b.slug || '',
         ownerName: b.owner_name,
         ownerEmail: b.owner_email,
         ownerPhone: b.owner_phone || '',
@@ -139,6 +142,7 @@ export const SuperAdminProvider: React.FC<{ children: ReactNode }> = ({ children
         headers: { 'Content-Type': 'application/json', ...ADMIN_HEADERS },
         body: JSON.stringify({
           name: input.name,
+          slug: input.slug,
           owner_name: input.ownerName,
           owner_email: input.ownerEmail,
           owner_phone: input.ownerPhone,

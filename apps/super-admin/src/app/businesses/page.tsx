@@ -4,6 +4,26 @@ import React, { useState } from 'react';
 import { useSuperAdmin, BusinessBranch } from '../../hooks/useSuperAdmin';
 import { useToast } from '../../components/ui/Toast';
 
+function generateSlug(text: string): string {
+  const cyrillicToLatin: Record<string, string> = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+    'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+    'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'kh', 'ц': 'ts',
+    'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+    'я': 'ya'
+  };
+  
+  return text
+    .toLowerCase()
+    .split('')
+    .map(char => cyrillicToLatin[char] || char)
+    .join('')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 export default function Businesses() {
   const { showToast } = useToast();
   const { businesses, addBusiness, toggleBusinessStatus, deleteBusiness, updateBusinessCredentials, loading } = useSuperAdmin();
@@ -38,12 +58,14 @@ export default function Businesses() {
   // Add Business Form State
   const [newBranch, setNewBranch] = useState({
     name: '',
+    slug: '',
     ownerName: '',
     ownerEmail: '',
     ownerPhone: '',
     password: '',
     city: 'Ташкент'
   });
+  const [isSlugEdited, setIsSlugEdited] = useState(false);
 
   const openAddModal = () => {
     setIsAddModalOpen(true);
@@ -52,7 +74,10 @@ export default function Businesses() {
 
   const closeAddModal = () => {
     setIsAddAnimateOpen(false);
-    setTimeout(() => setIsAddModalOpen(false), 300);
+    setTimeout(() => {
+      setIsAddModalOpen(false);
+      setIsSlugEdited(false);
+    }, 300);
   };
 
   const openDetailsDrawer = (business: BusinessBranch) => {
@@ -82,6 +107,22 @@ export default function Businesses() {
     setTimeout(() => setDeletingBusiness(null), 300);
   };
 
+  const handleNameChange = (name: string) => {
+    setNewBranch(prev => {
+      const updated = { ...prev, name };
+      if (!isSlugEdited) {
+        updated.slug = generateSlug(name);
+      }
+      return updated;
+    });
+  };
+
+  const handleSlugChange = (slugInput: string) => {
+    setIsSlugEdited(true);
+    const cleaned = slugInput.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setNewBranch(prev => ({ ...prev, slug: cleaned }));
+  };
+
   const handleAddBusiness = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBranch.name || !newBranch.ownerName || !newBranch.ownerEmail || !newBranch.ownerPhone || !newBranch.password) {
@@ -93,12 +134,14 @@ export default function Businesses() {
       closeAddModal();
       setNewBranch({
         name: '',
+        slug: '',
         ownerName: '',
         ownerEmail: '',
         ownerPhone: '',
         password: '',
         city: 'Ташкент'
       });
+      setIsSlugEdited(false);
     } catch (err) {
       // Error handles in hook
     }
@@ -399,7 +442,24 @@ export default function Businesses() {
                   required
                   placeholder="Например: Elite Barber"
                   value={newBranch.name}
-                  onChange={(e) => setNewBranch({ ...newBranch, name: e.target.value })}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#ff5a1f] smooth-transition"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block font-evolventa">Slug / Адрес ссылки *</label>
+                  <span className="text-[8px] text-slate-450 font-bold font-evolventa">
+                    client.bronly-hub.uz/{newBranch.slug || '...'}
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="Например: elite-barber"
+                  value={newBranch.slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
                   className="w-full text-xs font-semibold text-slate-700 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2.5 focus:outline-none focus:border-[#ff5a1f] smooth-transition"
                 />
               </div>
@@ -585,6 +645,17 @@ export default function Businesses() {
                       <span className="font-bold text-sky-500 font-evolventa">{selectedBusiness.ownerTelegram}</span>
                     </div>
                   )}
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-evolventa">Ссылка клиента:</span>
+                    <a 
+                      href={`https://client.bronly-hub.uz/${selectedBusiness.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-bold text-[#ff5a1f] hover:underline font-evolventa"
+                    >
+                      client.bronly-hub.uz/{selectedBusiness.slug}
+                    </a>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400 font-evolventa">Дата создания:</span>
                     <span className="font-bold text-slate-500 font-evolventa">{selectedBusiness.registeredAt}</span>
