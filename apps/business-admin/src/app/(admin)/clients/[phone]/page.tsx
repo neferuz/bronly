@@ -76,8 +76,9 @@ export default function ClientDetails() {
 
   // Filter bookings for this specific client
   const clientBookings = useMemo(() => {
+    const target = (phone || '').replace(/\D/g, '');
     return bookings
-      .filter((b) => b.clientPhone === phone)
+      .filter((b) => (b.clientPhone || '').replace(/\D/g, '') === target)
       .sort((a, b) => {
         const dateA = new Date(`${a.date}T${a.time}`);
         const dateB = new Date(`${b.date}T${b.time}`);
@@ -194,35 +195,27 @@ export default function ClientDetails() {
           </div>
         </div>
 
-        {clientInfo.telegramId ? (
-          <div className="flex items-center gap-2 self-start md:self-center">
-            <svg className="w-4 h-4 text-sky-500 fill-current shrink-0" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.37.88-3.87 2.56-.37.25-.7.37-.99.36-.33-.01-.96-.19-1.43-.34-.57-.19-1.02-.29-1.02-.29 0 0-.29-.15.02-.27.21-.08.68-.22 1.34-.48 4.14-1.8 6.9-2.98 8.28-3.55.33-.14.65-.24.96-.24.12 0 .38.03.55.17.15.12.2.28.22.41z"/>
+        <div className="flex items-center gap-2 self-start md:self-center">
+          <svg className="w-4 h-4 text-sky-500 fill-current shrink-0" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.37.88-3.87 2.56-.37.25-.7.37-.99.36-.33-.01-.96-.19-1.43-.34-.57-.19-1.02-.29-1.02-.29 0 0-.29-.15.02-.27.21-.08.68-.22 1.34-.48 4.14-1.8 6.9-2.98 8.28-3.55.33-.14.65-.24.96-.24.12 0 .38.03.55.17.15.12.2.28.22.41z"/>
+          </svg>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide font-evolventa">Telegram:</span>
+          <a
+            href={
+              clientInfo.telegramId && clientInfo.telegramId.startsWith('@')
+                ? `https://t.me/${clientInfo.telegramId.substring(1)}`
+                : `https://t.me/${clientInfo.phone.replace(/\D/g, '')}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-sky-50 hover:bg-sky-100 text-sky-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-sky-100 font-evolventa smooth-transition cursor-pointer flex items-center gap-1.5"
+          >
+            <span>{clientInfo.telegramId || 'Написать'}</span>
+            <svg className="w-3 h-3 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide font-evolventa">Telegram:</span>
-            {clientInfo.telegramId.startsWith('@') ? (
-              <a
-                href={`https://t.me/${clientInfo.telegramId.substring(1)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-sky-50 hover:bg-sky-100 text-sky-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-sky-100 font-evolventa smooth-transition cursor-pointer"
-              >
-                {clientInfo.telegramId}
-              </a>
-            ) : (
-              <span className="bg-sky-50 text-sky-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-sky-100 font-evolventa select-all">
-                {clientInfo.telegramId}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 text-xs text-slate-350 italic font-evolventa self-start md:self-center">
-            <svg className="w-4 h-4 text-slate-300 fill-current shrink-0" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.37.88-3.87 2.56-.37.25-.7.37-.99.36-.33-.01-.96-.19-1.43-.34-.57-.19-1.02-.29-1.02-.29 0 0-.29-.15.02-.27.21-.08.68-.22 1.34-.48 4.14-1.8 6.9-2.98 8.28-3.55.33-.14.65-.24.96-.24.12 0 .38.03.55.17.15.12.2.28.22.41z"/>
-            </svg>
-            Telegram не привязан
-          </div>
-        )}
+          </a>
+        </div>
       </div>
 
       {/* STATISTICAL CARDS ROW */}

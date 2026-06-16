@@ -568,6 +568,77 @@ export default function ClientMiniApp() {
     );
   }
 
+  // Telegram phone verification check
+  const isTgUser = typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user;
+  const isPhoneUnverified = !clientPhone || clientPhone === '+998 90 123-45-67';
+
+  if (isTgUser && isPhoneUnverified) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-center font-sans relative overflow-hidden select-none">
+        {/* Glow effects */}
+        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-[var(--primary)]/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
+
+        <div className="w-full max-w-sm bg-white/5 backdrop-blur-2xl rounded-3xl p-8 border border-white/10 shadow-2xl space-y-6 relative z-10">
+          <div className="w-20 h-20 rounded-3xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center text-3xl mx-auto shrink-0 select-none animate-pulse">
+            📱
+          </div>
+          
+          <div className="space-y-3">
+            <h2 className="text-xl font-extrabold text-white font-evolventa">
+              Подтверждение номера
+            </h2>
+            <p className="text-slate-400 text-xs font-evolventa leading-relaxed px-2">
+              Для записи в салон <strong>{businessData?.name || 'Bronly'}</strong> необходимо подтвердить ваш номер телефона. 
+              Это безопасно и займет всего один клик.
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              const tg = (window as any).Telegram?.WebApp;
+              if (tg && typeof tg.requestContact === 'function') {
+                try {
+                  tg.requestContact((sent: boolean, response: any) => {
+                    if (sent) {
+                      let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+                      if (phoneNum) {
+                        if (!phoneNum.startsWith('+')) {
+                          phoneNum = '+' + phoneNum;
+                        }
+                        setClientPhone(phoneNum);
+                        localStorage.setItem('client_phone', phoneNum);
+                        showToast('✅ Номер телефона успешно привязан!');
+                        
+                        const chatId = clientTelegramId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                        if (chatId && businessId) {
+                          fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              business_id: businessId,
+                              chat_id: chatId,
+                              phone: phoneNum
+                            })
+                          }).catch(err => console.error("Failed to send contact shared notification:", err));
+                        }
+                      }
+                    }
+                  });
+                } catch (contactErr) {
+                  console.error("Failed to request contact:", contactErr);
+                }
+              }
+            }}
+            className="w-full py-4 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-sm font-extrabold font-evolventa shadow-lg shadow-[var(--primary)]/20 active:scale-[0.98] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+          >
+            Подтвердить номер
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none antialiased pb-24 w-full relative overflow-hidden">
       
