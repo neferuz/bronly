@@ -101,7 +101,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="elite@bronly.uz"
+              placeholder="your@email.com"
               className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#ff5a1f] focus:ring-1 focus:ring-[#ff5a1f]/20 transition-all font-semibold font-evolventa"
               required
             />
@@ -136,11 +136,6 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-
-      {/* Small Hint Footer */}
-      <span className="mt-4 text-[10px] text-slate-400 font-semibold font-evolventa text-center">
-        Демо-доступ: elite@bronly.uz / 123456
-      </span>
     </div>
   );
 }
