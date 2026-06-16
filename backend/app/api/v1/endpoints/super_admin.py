@@ -242,6 +242,9 @@ def update_business_credentials(
         business.hashed_password = get_password_hash(req.password)
         business.plain_password = req.password
 
+    old_client_token = business.client_bot_token
+    old_master_token = business.master_bot_token
+
     if req.client_bot_username is not None:
         business.client_bot_username = req.client_bot_username
     if req.client_bot_token is not None:
@@ -254,6 +257,33 @@ def update_business_credentials(
     db.add(business)
     db.commit()
     db.refresh(business)
+
+    # Re-register webhooks if token changed
+    from app.core.config import settings
+    from app.core.telegram_bot import set_bot_webhook, delete_bot_webhook
+
+    if req.client_bot_token is not None and req.client_bot_token != old_client_token:
+        if req.client_bot_token:
+            set_bot_webhook(
+                business.id,
+                req.client_bot_token,
+                "client",
+                settings.TELEGRAM_WEBHOOK_BASE_URL
+            )
+        elif old_client_token:
+            delete_bot_webhook(old_client_token)
+
+    if req.master_bot_token is not None and req.master_bot_token != old_master_token:
+        if req.master_bot_token:
+            set_bot_webhook(
+                business.id,
+                req.master_bot_token,
+                "master",
+                settings.TELEGRAM_WEBHOOK_BASE_URL
+            )
+        elif old_master_token:
+            delete_bot_webhook(old_master_token)
+
     return business
 
 @router.delete("/businesses/{business_id}", dependencies=[Depends(verify_super_admin_key)])
