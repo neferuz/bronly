@@ -341,7 +341,7 @@ export default function ReviewsPage() {
   }, [selectedReview, bookings]);
 
   return (
-    <div className="space-y-8 w-full font-sans select-none pb-4 xl:pb-12 animate-in fade-in duration-300">
+    <div className="space-y-8 w-full font-sans select-none pb-12 animate-in fade-in duration-300">
       {/* Page Title Header */}
       <div className="flex flex-col gap-1">
         <h2 className="font-extrabold text-2xl text-slate-800 tracking-tight font-evolventa">
