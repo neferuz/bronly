@@ -46,7 +46,16 @@ export default function MasterProfilePage() {
   // 1. Load context from localStorage or query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const qB = params.get('b') || params.get('business_id');
+    let qB = params.get('b') || params.get('business_id');
+
+    if (!qB && window.location.pathname && window.location.pathname !== '/') {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      const systemRoutes = ['profile', 'history'];
+      if (pathParts.length > 0 && !systemRoutes.includes(pathParts[0])) {
+        qB = pathParts[0];
+      }
+    }
+
     const qM = params.get('m') || params.get('master_id');
     const qTg = params.get('tg_id') || params.get('telegram_id');
 

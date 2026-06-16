@@ -24,6 +24,15 @@ export default function ProfilePage() {
       // 1. Get business ID from params or localStorage
       const params = new URLSearchParams(window.location.search);
       let bId = params.get('business_id') || params.get('b');
+
+      if (!bId && window.location.pathname && window.location.pathname !== '/') {
+        const pathParts = window.location.pathname.split('/').filter(Boolean);
+        const systemRoutes = ['profile', 'history', 'review'];
+        if (pathParts.length > 0 && !systemRoutes.includes(pathParts[0])) {
+          bId = pathParts[0];
+        }
+      }
+
       if (!bId) {
         bId = localStorage.getItem('last_business_id') || '';
       } else {
