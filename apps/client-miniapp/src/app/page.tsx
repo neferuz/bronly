@@ -467,7 +467,7 @@ export default function ClientMiniApp() {
   };
 
 
-  if (!isParamsChecked) {
+  if (!isParamsChecked || isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center font-sans">
         <div className="flex flex-col items-center gap-3">
