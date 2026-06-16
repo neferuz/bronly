@@ -200,9 +200,20 @@ export default function ClientDetails() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.37.88-3.87 2.56-.37.25-.7.37-.99.36-.33-.01-.96-.19-1.43-.34-.57-.19-1.02-.29-1.02-.29 0 0-.29-.15.02-.27.21-.08.68-.22 1.34-.48 4.14-1.8 6.9-2.98 8.28-3.55.33-.14.65-.24.96-.24.12 0 .38.03.55.17.15.12.2.28.22.41z"/>
             </svg>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide font-evolventa">Telegram:</span>
-            <span className="bg-sky-50 text-sky-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-sky-100 font-evolventa select-all">
-              {clientInfo.telegramId}
-            </span>
+            {clientInfo.telegramId.startsWith('@') ? (
+              <a
+                href={`https://t.me/${clientInfo.telegramId.substring(1)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-sky-50 hover:bg-sky-100 text-sky-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-sky-100 font-evolventa smooth-transition cursor-pointer"
+              >
+                {clientInfo.telegramId}
+              </a>
+            ) : (
+              <span className="bg-sky-50 text-sky-600 px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold border border-sky-100 font-evolventa select-all">
+                {clientInfo.telegramId}
+              </span>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-1.5 text-xs text-slate-350 italic font-evolventa self-start md:self-center">

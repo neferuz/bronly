@@ -162,9 +162,9 @@ export default function ClientMiniApp() {
                 finalName = tgUser.username;
               }
             }
-            if (!finalTgId) {
-              finalTgId = String(tgUser.id);
-            }
+             if (!finalTgId) {
+               finalTgId = tgUser.username ? `@${tgUser.username}` : String(tgUser.id);
+             }
             if (tgUser.photo_url) {
               finalPhotoUrl = tgUser.photo_url;
             }
@@ -384,8 +384,39 @@ export default function ClientMiniApp() {
 
   // Handle Form Submission
   const handleSubmitBooking = async () => {
-    if (!clientName || !clientPhone) {
-      showToast('Пожалуйста, заполните имя и телефон');
+    if (!clientName || !clientPhone || clientPhone === '+998 90 123-45-67') {
+      showToast('⚠️ Пожалуйста, подтвердите ваш номер телефона');
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg && typeof tg.requestContact === 'function') {
+        try {
+          tg.requestContact((sent: boolean, response: any) => {
+            if (sent) {
+              let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+              if (phoneNum) {
+                if (!phoneNum.startsWith('+')) {
+                  phoneNum = '+' + phoneNum;
+                }
+                setClientPhone(phoneNum);
+                localStorage.setItem('client_phone', phoneNum);
+                showToast('✅ Номер телефона привязан! Попробуйте записаться еще раз.');
+                
+                const chatId = clientTelegramId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                if (chatId && businessId) {
+                  fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      business_id: businessId,
+                      chat_id: chatId,
+                      phone: phoneNum
+                    })
+                  }).catch(err => console.error("Failed to send contact shared notification:", err));
+                }
+              }
+            }
+          });
+        } catch(e) {}
+      }
       return;
     }
     if (!selectedService || !selectedMaster || !selectedTime) {
@@ -1039,12 +1070,52 @@ export default function ClientMiniApp() {
                    <div className="py-2.5 px-4">
                      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Номер телефона</p>
                      <input
-                       type="tel"
-                       placeholder="+998 90 123-45-67"
-                       value={clientPhone}
-                       onChange={(e) => setClientPhone(e.target.value)}
-                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:border-[var(--primary)]/30 focus:bg-white text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 transition-colors font-bold font-evolventa"
-                     />
+                        type="tel"
+                        placeholder="+998 90 123-45-67"
+                        value={clientPhone}
+                        onChange={(e) => setClientPhone(e.target.value)}
+                        readOnly={typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user}
+                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:border-[var(--primary)]/30 focus:bg-white text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 transition-colors font-bold font-evolventa"
+                      />
+                      {clientPhone === '+998 90 123-45-67' && typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const tg = (window as any).Telegram?.WebApp;
+                            if (tg && typeof tg.requestContact === 'function') {
+                              tg.requestContact((sent, response) => {
+                                if (sent) {
+                                  let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
+                                  if (phoneNum) {
+                                    if (!phoneNum.startsWith('+')) {
+                                      phoneNum = '+' + phoneNum;
+                                    }
+                                    setClientPhone(phoneNum);
+                                    localStorage.setItem('client_phone', phoneNum);
+                                    showToast('✅ Номер телефона привязан!');
+                                    
+                                    const chatId = clientTelegramId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                                    if (chatId && businessId) {
+                                      fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          business_id: businessId,
+                                          chat_id: chatId,
+                                          phone: phoneNum
+                                        })
+                                      }).catch(err => console.error("Failed to send contact shared notification:", err));
+                                    }
+                                  }
+                                }
+                              });
+                            }
+                          }}
+                          className="mt-2 w-full py-2 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-extrabold font-evolventa hover:bg-[var(--primary)]/20 active:scale-95 smooth-transition cursor-pointer text-center"
+                        >
+                          📱 Подтвердить номер телефона
+                        </button>
+                      )}
                    </div>
                 </div>
               </div>

@@ -890,6 +890,35 @@ export default function Bookings() {
                 </span>
               </div>
 
+              {/* Telegram Contact info if present */}
+              {selectedBooking.clientTelegramId && (
+                <div className="bg-sky-50/40 rounded-2xl p-3 border border-sky-100/50 flex items-center justify-between gap-3 font-sans mt-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-500 border border-sky-100 flex items-center justify-center shrink-0">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.37.88-3.87 2.56-.37.25-.7.37-.99.36-.33-.01-.96-.19-1.43-.34-.57-.19-1.02-.29-1.02-.29 0 0-.29-.15.02-.27.21-.08.68-.22 1.34-.48 4.14-1.8 6.9-2.98 8.28-3.55.33-.14.65-.24.96-.24.12 0 .38.03.55.17.15.12.2.28.22.41z"/>
+                      </svg>
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[8px] font-bold text-slate-400 font-evolventa uppercase tracking-wider mb-0.5 leading-none">Telegram</span>
+                      <span className="font-extrabold text-slate-800 text-xs md:text-sm font-evolventa truncate">
+                        {selectedBooking.clientTelegramId}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedBooking.clientTelegramId.startsWith('@') && (
+                    <a
+                      href={`https://t.me/${selectedBooking.clientTelegramId.substring(1)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-[10px] font-black font-evolventa smooth-transition cursor-pointer select-none"
+                    >
+                      Написать
+                    </a>
+                  )}
+                </div>
+              )}
+
               {/* Consolidated Visit Info Block */}
               <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 space-y-3">
                 {/* Service Details */}
