@@ -186,7 +186,7 @@ export default function ClientMiniApp() {
                       setStorage('client_phone', phoneNum);
                       showToast('✅ Номер телефона успешно привязан!');
                       
-                      const chatId = finalTgId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                      const chatId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '';
                       if (chatId && bId) {
                         fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
                           method: 'POST',
@@ -400,7 +400,7 @@ export default function ClientMiniApp() {
                 localStorage.setItem('client_phone', phoneNum);
                 showToast('✅ Номер телефона привязан! Попробуйте записаться еще раз.');
                 
-                const chatId = clientTelegramId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                const chatId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '';
                 if (chatId && businessId) {
                   fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
                     method: 'POST',
@@ -574,23 +574,20 @@ export default function ClientMiniApp() {
 
   if (isTgUser && isPhoneUnverified) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-center font-sans relative overflow-hidden select-none">
-        {/* Glow effects */}
-        <div className="absolute top-[-20%] left-[-20%] w-[80%] h-[80%] rounded-full bg-[var(--primary)]/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[-20%] w-[80%] h-[80%] rounded-full bg-blue-500/10 blur-[120px] pointer-events-none" />
-
-        <div className="w-full max-w-sm bg-white/5 backdrop-blur-2xl rounded-3xl p-8 border border-white/10 shadow-2xl space-y-6 relative z-10">
-          <div className="w-20 h-20 rounded-3xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/20 flex items-center justify-center text-3xl mx-auto shrink-0 select-none animate-pulse">
-            📱
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center font-sans select-none antialiased w-full relative overflow-hidden">
+        <div className="w-full max-w-sm bg-white rounded-[28px] p-7 border border-slate-200/80 shadow-none space-y-5 relative z-10">
+          <div className="w-14 h-14 rounded-2xl bg-[var(--primary)]/10 text-[var(--primary)] border border-[var(--primary)]/15 flex items-center justify-center mx-auto shrink-0 select-none">
+            <svg className="w-6 h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
           </div>
           
-          <div className="space-y-3">
-            <h2 className="text-xl font-extrabold text-white font-evolventa">
+          <div className="space-y-2">
+            <h2 className="text-base font-extrabold text-slate-800 font-evolventa">
               Подтверждение номера
             </h2>
-            <p className="text-slate-400 text-xs font-evolventa leading-relaxed px-2">
-              Для записи в салон <strong>{businessData?.name || 'Bronly'}</strong> необходимо подтвердить ваш номер телефона. 
-              Это безопасно и займет всего один клик.
+            <p className="text-slate-400 text-[11px] font-evolventa leading-relaxed px-1">
+              Для продолжения записи в <strong>{businessData?.name || 'салон'}</strong>, пожалуйста, подтвердите ваш номер телефона через Telegram.
             </p>
           </div>
 
@@ -610,7 +607,7 @@ export default function ClientMiniApp() {
                         localStorage.setItem('client_phone', phoneNum);
                         showToast('✅ Номер телефона успешно привязан!');
                         
-                        const chatId = clientTelegramId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                        const chatId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '';
                         if (chatId && businessId) {
                           fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
                             method: 'POST',
@@ -630,8 +627,11 @@ export default function ClientMiniApp() {
                 }
               }
             }}
-            className="w-full py-4 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-sm font-extrabold font-evolventa shadow-lg shadow-[var(--primary)]/20 active:scale-[0.98] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white text-[13px] font-extrabold font-evolventa active:scale-[0.98] transition-transform duration-150 cursor-pointer flex items-center justify-center gap-1.5 shadow-none"
           >
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.2-.02-.08.02-1.37.88-3.87 2.56-.37.25-.7.37-.99.36-.33-.01-.96-.19-1.43-.34-.57-.19-1.02-.29-1.02-.29 0 0-.29-.15.02-.27.21-.08.68-.22 1.34-.48 4.14-1.8 6.9-2.98 8.28-3.55.33-.14.65-.24.96-.24.12 0 .38.03.55.17.15.12.2.28.22.41z"/>
+            </svg>
             Подтвердить номер
           </button>
         </div>
@@ -1165,7 +1165,7 @@ export default function ClientMiniApp() {
                                     localStorage.setItem('client_phone', phoneNum);
                                     showToast('✅ Номер телефона привязан!');
                                     
-                                    const chatId = clientTelegramId || (tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '');
+                                    const chatId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '';
                                     if (chatId && businessId) {
                                       fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
                                         method: 'POST',
