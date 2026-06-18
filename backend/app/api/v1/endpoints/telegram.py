@@ -121,7 +121,7 @@ async def telegram_webhook(
                         ]
                     ]
                 }
-                send_telegram_message(bot_token, chat_id, welcome_msg, reply_markup)
+                background_tasks.add_task(send_telegram_message, bot_token, chat_id, welcome_msg, reply_markup)
             
             elif bot_type == "master":
                 welcome_msg = (
@@ -149,6 +149,6 @@ async def telegram_webhook(
                         ]
                     ]
                 }
-                send_telegram_message(bot_token, chat_id, welcome_msg, reply_markup)
+                background_tasks.add_task(send_telegram_message, bot_token, chat_id, welcome_msg, reply_markup)
                 
     return {"ok": True}
