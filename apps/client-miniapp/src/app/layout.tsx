@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
+import TelegramInit from "@/components/TelegramInit";
 
 const evolventa = localFont({
   src: [
@@ -41,9 +42,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-800 font-sans" suppressHydrationWarning>
         {children}
+        <TelegramInit />
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
         />
       </body>
     </html>

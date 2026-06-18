@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
+import TelegramInit from "@/components/TelegramInit";
 import { MasterProvider } from "@/context/MasterContext";
 
 const evolventa = localFont({
@@ -42,7 +44,11 @@ export default function RootLayout({
         <MasterProvider>
           {children}
         </MasterProvider>
-        <script src="https://telegram.org/js/telegram-web-app.js" async></script>
+        <TelegramInit />
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
       </body>
     </html>
   );
