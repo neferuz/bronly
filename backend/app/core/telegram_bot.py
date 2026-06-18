@@ -17,7 +17,7 @@ def set_bot_webhook(business_id: str, bot_token: str, bot_type: str, webhook_bas
     url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
     webhook_url = f"{webhook_base_url}/api/v1/telegram/webhook/{business_id}/{bot_type}"
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, json={"url": webhook_url})
             logger.info(f"Telegram setWebhook for {business_id} ({bot_type}): {resp.status_code} - {resp.text}")
     except Exception as e:
@@ -31,7 +31,7 @@ def delete_bot_webhook(bot_token: str):
         return
     url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url)
             logger.info(f"Telegram deleteWebhook response: {resp.status_code} - {resp.text}")
     except Exception as e:
@@ -53,7 +53,7 @@ def send_telegram_message(bot_token: str, chat_id: str, text: str, reply_markup:
     if reply_markup:
         payload["reply_markup"] = reply_markup
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, json=payload)
             if not resp.is_success:
                 logger.error(f"Telegram sendMessage failed: {resp.status_code} - {resp.text}")
@@ -129,7 +129,7 @@ def answer_callback_query(bot_token: str, callback_query_id: str, text: str = No
     if text:
         payload["text"] = text
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             client.post(url, json=payload)
     except Exception as e:
         logger.error(f"Failed to answer callback query: {e}")
@@ -150,7 +150,7 @@ def edit_message_text(bot_token: str, chat_id: str, message_id: int, text: str, 
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             client.post(url, json=payload)
     except Exception as e:
         logger.error(f"Failed to edit message text: {e}")
