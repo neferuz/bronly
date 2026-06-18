@@ -11,41 +11,45 @@ export default function Newsletter() {
   const [imageUrl, setImageUrl] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [audienceStats, setAudienceStats] = useState({ total: 0, frequent: 0, inactive: 0 });
   const [isLoading, setIsLoading] = useState(true);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const fetchHistory = async () => {
+  const fetchData = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('business_admin_logged_in');
       const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${API_HOST}/api/v1/businesses/me/broadcasts`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
+      
+      const [resHistory, resStats] = await Promise.all([
+        fetch(`${API_HOST}/api/v1/businesses/me/broadcasts`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${API_HOST}/api/v1/businesses/me/audience-stats`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (resHistory.ok) {
+        const data = await resHistory.json();
         setHistory(data);
       }
+      if (resStats.ok) {
+        const statsData = await resStats.json();
+        setAudienceStats(statsData);
+      }
     } catch (e) {
-      console.error('Failed to fetch history', e);
+      console.error('Failed to fetch data', e);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchData();
   }, []);
-
-  const stats = useMemo(() => {
-    return {
-      totalSent: history.reduce((acc, item) => acc + (item.sent_count || 0), 0),
-      totalCampaigns: history.length,
-      lastCampaign: history.length > 0 ? new Date(history[0].created_at) : null,
-    };
-  }, [history]);
 
   const insertFormatting = (tag: string) => {
     const textarea = textareaRef.current;
@@ -117,7 +121,7 @@ export default function Newsletter() {
       showToast(`Рассылка успешно запущена! Доставлено: ${data.sent_count}`, 'success');
       setMessageText('');
       setImageUrl('');
-      fetchHistory();
+      fetchData();
     } catch (e: any) {
       showToast(e.message || 'Произошла ошибка при отправке рассылки.', 'error');
     } finally {
@@ -148,11 +152,11 @@ export default function Newsletter() {
         <>
           {/* Top Metrics Cards Row (Matching dashboard style) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
-            {/* Total Sent Card */}
+             {/* Total Clients Card */}
             <div className="bg-white rounded-3xl p-5 border border-slate-200/80 smooth-transition hover:border-slate-300 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-evolventa">Всего отправлено</span>
-                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#ff5a1f] flex items-center justify-center border border-orange-100/60">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-evolventa">Всего клиентов</span>
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center border border-blue-100/60">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
@@ -160,46 +164,42 @@ export default function Newsletter() {
               </div>
               <div className="mt-3">
                 <h3 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight font-evolventa">
-                  {stats.totalSent} <span className="text-xs font-bold text-slate-400 font-sans">сообщ.</span>
+                  {audienceStats.total} <span className="text-xs font-bold text-slate-400 font-sans">чел.</span>
                 </h3>
               </div>
             </div>
 
-            {/* Total Campaigns Card */}
+            {/* Frequent Clients Card */}
             <div className="bg-white rounded-3xl p-5 border border-slate-200/80 smooth-transition hover:border-slate-300 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-evolventa">Кампаний</span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100/60">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-evolventa">Постоянные (3+ визитов)</span>
+                <div className="w-8 h-8 rounded-xl bg-orange-50 text-[#ff5a1f] flex items-center justify-center border border-orange-100/60">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                   </svg>
                 </div>
               </div>
               <div className="mt-3">
-                <h3 className="text-xl md:text-2xl font-black text-emerald-600 tracking-tight font-evolventa">
-                  {stats.totalCampaigns}
+                <h3 className="text-xl md:text-2xl font-black text-[#ff5a1f] tracking-tight font-evolventa">
+                  {audienceStats.frequent} <span className="text-xs font-bold text-[#ff5a1f]/60 font-sans">чел.</span>
                 </h3>
               </div>
             </div>
 
-            {/* Last Campaign Card */}
+            {/* Inactive Clients Card */}
             <div className="bg-white rounded-3xl p-5 border border-slate-200/80 smooth-transition hover:border-slate-300 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-evolventa">Последняя рассылка</span>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center border border-blue-100/60">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-evolventa">Спящие (&gt;30 дней)</span>
+                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center border border-slate-200/60">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                   </svg>
                 </div>
               </div>
               <div className="mt-3">
-                {stats.lastCampaign ? (
-                  <h3 className="text-sm md:text-base font-black text-slate-800 tracking-tight font-evolventa">
-                    {stats.lastCampaign.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
-                  </h3>
-                ) : (
-                  <h3 className="text-xl md:text-2xl font-black text-slate-400 font-evolventa">—</h3>
-                )}
+                <h3 className="text-xl md:text-2xl font-black text-slate-600 tracking-tight font-evolventa">
+                  {audienceStats.inactive} <span className="text-xs font-bold text-slate-400 font-sans">чел.</span>
+                </h3>
               </div>
             </div>
           </div>

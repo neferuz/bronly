@@ -251,4 +251,36 @@ def get_broadcast_history(
     history = db.query(BroadcastHistory).filter(BroadcastHistory.business_id == current_business.id).order_by(BroadcastHistory.created_at.desc()).all()
     return history
 
-
+@router.get("/me/audience-stats")
+def get_audience_stats(db: Session = Depends(get_db), current_business: Business = Depends(get_current_business)):
+    """
+    Get audience statistics: total clients, frequent clients (3+ visits), inactive clients (>30 days).
+    """
+    from app.models.booking import Booking
+    
+    # Total unique clients (who have a telegram ID)
+    total = db.query(func.count(func.distinct(Booking.client_telegram_id))).filter(
+        Booking.business_id == current_business.id, 
+        Booking.client_telegram_id.isnot(None)
+    ).scalar() or 0
+    
+    # Frequent clients (>= 3 visits)
+    subq_frequent = db.query(Booking.client_telegram_id).filter(
+        Booking.business_id == current_business.id, 
+        Booking.client_telegram_id.isnot(None)
+    ).group_by(Booking.client_telegram_id).having(func.count(Booking.id) >= 3).subquery()
+    frequent = db.query(func.count()).select_from(subq_frequent).scalar() or 0
+    
+    # Inactive clients (last visit > 30 days ago)
+    thirty_days_ago = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
+    subq_inactive = db.query(Booking.client_telegram_id).filter(
+        Booking.business_id == current_business.id, 
+        Booking.client_telegram_id.isnot(None)
+    ).group_by(Booking.client_telegram_id).having(func.max(Booking.date) < thirty_days_ago).subquery()
+    inactive = db.query(func.count()).select_from(subq_inactive).scalar() or 0
+    
+    return {
+        "total": total,
+        "frequent": frequent,
+        "inactive": inactive
+    }
