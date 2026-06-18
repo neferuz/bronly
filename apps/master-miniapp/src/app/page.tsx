@@ -109,14 +109,14 @@ export default function MasterDashboard() {
         if (tgStartParam) {
           const parts = tgStartParam.split('_');
           if (parts.length >= 2) {
-            finalM = parts[parts.length - 1];
-            
             // Check if the first part is a valid UUID
             const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
             if (uuidPattern.test(parts[0])) {
               finalB = parts[0];
+              finalM = parts.slice(1).join('_');
             } else {
               finalB = parts.slice(0, -1).join('_');
+              finalM = parts[parts.length - 1];
             }
           }
         }
@@ -125,7 +125,7 @@ export default function MasterDashboard() {
         if (!finalM) finalM = localStorage.getItem('master_id') || '';
         if (!finalTg) finalTg = localStorage.getItem('master_telegram_id') || '';
 
-        if (!finalB || !finalM) {
+        if (!finalB || (!finalM && !finalTg)) {
           setAuthStatus('no_params');
           return;
         }
@@ -135,7 +135,7 @@ export default function MasterDashboard() {
         setTelegramId(finalTg);
 
         localStorage.setItem('master_business_id', finalB);
-        localStorage.setItem('master_id', finalM);
+        if (finalM) localStorage.setItem('master_id', finalM);
         if (finalTg) localStorage.setItem('master_telegram_id', finalTg);
 
         // Fetch verify status
@@ -157,6 +157,8 @@ export default function MasterDashboard() {
         
         if (data.master) {
           const m = data.master;
+          setMasterId(m.id);
+          localStorage.setItem('master_id', m.id);
           setCurrentMaster({
             id: m.id,
             name: m.name,

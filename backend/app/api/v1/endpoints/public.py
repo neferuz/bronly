@@ -199,15 +199,25 @@ def read_bookings_by_phone(phone: str, db: Session = Depends(get_db)):
 @router.get("/masters/verify", response_model=MasterVerifyResponse)
 def verify_master(
     business_id: str,
-    master_id: str,
+    master_id: Optional[str] = None,
     telegram_id: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     resolved_id = resolve_business_id(db, business_id)
-    master = db.query(Master).filter(
-        Master.id == master_id,
-        Master.business_id == resolved_id
-    ).first()
+    
+    master = None
+    if telegram_id:
+        master = db.query(Master).filter(
+            Master.telegram_id == telegram_id,
+            Master.business_id == resolved_id
+        ).first()
+        
+    if not master and master_id:
+        master = db.query(Master).filter(
+            Master.id == master_id,
+            Master.business_id == resolved_id
+        ).first()
+        
     if not master:
         raise HTTPException(status_code=404, detail="Мастер не найден")
     

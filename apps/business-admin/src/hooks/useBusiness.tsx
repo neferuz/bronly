@@ -223,7 +223,7 @@ const BusinessProviderInner: React.FC<{ children: ReactNode }> = ({ children }) 
         description: m.description || '',
         services: m.services || [],
         isActive: m.is_active,
-        telegramLink: `https://t.me/${masterBotUser}/app?startapp=${businessIdStr}_${m.id}`,
+        telegramLink: `https://t.me/${masterBotUser}?start=${businessIdStr}_${m.id}`,
         telegramId: m.telegram_id
       }));
       setMasters(mappedMasters);
