@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, Float, Boolean, Integer, DateTime
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from datetime import datetime, timezone
+from app.models.broadcast import BroadcastHistory
 
 class Business(Base):
     __tablename__ = "businesses"

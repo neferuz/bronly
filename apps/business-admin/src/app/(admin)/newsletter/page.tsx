@@ -21,7 +21,7 @@ export default function Newsletter() {
       setIsLoading(true);
       const token = localStorage.getItem('access_token');
       const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${API_HOST}/api/v1/business/me/broadcasts`, {
+      const res = await fetch(`${API_HOST}/api/v1/businesses/me/broadcasts`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
@@ -95,7 +95,7 @@ export default function Newsletter() {
       const token = localStorage.getItem('access_token');
       const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       
-      const res = await fetch(`${API_HOST}/api/v1/business/me/broadcast`, {
+      const res = await fetch(`${API_HOST}/api/v1/businesses/me/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
