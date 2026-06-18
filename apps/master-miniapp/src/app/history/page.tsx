@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import BottomNav from '../../components/layout/BottomNav';
+import { useMaster } from '../../context/MasterContext';
 
 interface Service {
   id: string;
@@ -38,82 +39,24 @@ interface Booking {
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function MasterHistoryPage() {
-  const [businessId, setBusinessId] = useState<string>('');
-  const [masterId, setMasterId] = useState<string>('');
-  const [telegramId, setTelegramId] = useState<string>('');
-  
-  const [currentMaster, setCurrentMaster] = useState<Master | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
+  const {
+    businessId,
+    masterId,
+    telegramId,
+    currentMaster,
+    services,
+    toggleMasterActive
+  } = useMaster();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // 1. Load context from localStorage or query params
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    let qB = params.get('b') || params.get('business_id');
-
-    if (!qB && window.location.pathname && window.location.pathname !== '/') {
-      const pathParts = window.location.pathname.split('/').filter(Boolean);
-      const systemRoutes = ['profile', 'history'];
-      if (pathParts.length > 0 && !systemRoutes.includes(pathParts[0])) {
-        qB = pathParts[0];
-      }
-    }
-
-    const qM = params.get('m') || params.get('master_id');
-    const qTg = params.get('tg_id') || params.get('telegram_id');
-
-    const b = qB || localStorage.getItem('master_business_id') || '';
-    const m = qM || localStorage.getItem('master_id') || '';
-    const tg = qTg || localStorage.getItem('master_telegram_id') || '';
-
-    setBusinessId(b);
-    setMasterId(m);
-    setTelegramId(tg);
-
-    if (b) localStorage.setItem('master_business_id', b);
-    if (m) localStorage.setItem('master_id', m);
-    if (tg) localStorage.setItem('master_telegram_id', tg);
-  }, []);
-
-  // 2. Fetch master info, services, and bookings
-  const loadData = async () => {
+  // 1. Fetch bookings on mount or when credentials change
+  const loadBookings = async () => {
     if (!businessId || !masterId || !telegramId) return;
     setIsLoading(true);
     try {
-      // Fetch master status
-      const verifyRes = await fetch(`${API_HOST}/api/v1/public/masters/verify?business_id=${businessId}&master_id=${masterId}&telegram_id=${telegramId}`);
-      if (verifyRes.ok) {
-        const data = await verifyRes.json();
-        if (data.master) {
-          const m = data.master;
-          setCurrentMaster({
-            id: m.id,
-            name: m.name,
-            avatar: m.avatar || '',
-            phone: m.phone || '',
-            rating: m.rating || 5.0,
-            isActive: m.is_active,
-            telegramId: m.telegram_id
-          });
-        }
-      }
-
-      // Fetch services
-      const servRes = await fetch(`${API_HOST}/api/v1/public/businesses/${businessId}/services`);
-      if (servRes.ok) {
-        const data = await servRes.json();
-        const mapped = data.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          price: s.price,
-          duration: s.duration
-        }));
-        setServices(mapped);
-      }
-
-      // Fetch all bookings
       const bookRes = await fetch(`${API_HOST}/api/v1/public/masters/${masterId}/bookings?business_id=${businessId}&telegram_id=${telegramId}&date=all`);
       if (bookRes.ok) {
         const data = await bookRes.json();
@@ -141,70 +84,22 @@ export default function MasterHistoryPage() {
   };
 
   useEffect(() => {
-    if (businessId && masterId && telegramId) {
-      loadData();
-    }
+    loadBookings();
   }, [businessId, masterId, telegramId]);
 
-  // 3. Filter past/history bookings
+  // 2. Filter past/history bookings
   const historyBookings = useMemo(() => {
     return bookings
       .filter((booking) => ['completed', 'cancelled', 'noshow'].includes(booking.status))
       .sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
   }, [bookings]);
 
-  // 4. Toggle active status
-  const toggleMasterActive = async () => {
-    if (!currentMaster || !masterId || !telegramId) return;
-    const nextStatus = !currentMaster.isActive;
-    try {
-      const res = await fetch(`${API_HOST}/api/v1/public/masters/${masterId}/active`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          is_active: nextStatus,
-          telegram_id: telegramId
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentMaster(prev => prev ? { ...prev, isActive: data.is_active } : null);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const getServiceName = (id: string) => {
     return services.find((s) => s.id === id)?.name || 'Услуга';
   };
 
-  // --- RENDER STATES ---
+  if (!currentMaster) return null;
 
-  if (!businessId || !masterId) {
-    return (
-      <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white px-6 text-center select-none">
-        <div className="w-16 h-16 rounded-3xl bg-[#ff5a1f]/10 border border-[#ff5a1f]/20 flex items-center justify-center text-[#ff5a1f] mb-6">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-black font-evolventa mb-2">Авторизация не найдена</h3>
-        <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-          Пожалуйста, вернитесь на главную страницу и откройте кабинет через Telegram-бота.
-        </p>
-      </div>
-    );
-  }
-
-  if (isLoading || !currentMaster) {
-    return (
-      <div className="h-screen bg-slate-900 flex flex-col items-center justify-center text-white px-6">
-        <div className="w-10 h-10 border-4 border-t-[#ff5a1f] border-slate-700 rounded-full animate-spin mb-4" />
-        <p className="text-xs text-slate-400 font-evolventa">Загрузка истории...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans select-none antialiased w-full relative overflow-hidden">
@@ -285,56 +180,63 @@ export default function MasterHistoryPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto px-4 py-4.5 flex flex-col gap-4 select-none bg-slate-50 pb-28">
-        <h3 className="text-[13px] font-black text-slate-800 font-evolventa px-1">Завершенные сеансы ({historyBookings.length})</h3>
+        <h3 className="text-[13px] font-black text-slate-800 font-evolventa px-1">Завершенные сеансы ({isLoading ? '...' : historyBookings.length})</h3>
 
-        <div className="space-y-3">
-          {historyBookings.length > 0 ? (
-            historyBookings.map((booking) => {
-              const serviceName = booking.serviceName;
-              
-              let statusLabel = '';
-              let statusClass = '';
-              if (booking.status === 'completed') {
-                statusLabel = 'Выполнена';
-                statusClass = 'bg-emerald-50 text-emerald-600 border border-emerald-100/50';
-              } else if (booking.status === 'cancelled') {
-                statusLabel = 'Отменена';
-                statusClass = 'bg-red-50 text-red-500 border border-red-100/50';
-              } else if (booking.status === 'noshow') {
-                statusLabel = 'Не пришел';
-                statusClass = 'bg-slate-100 text-slate-500 border border-slate-200/50';
-              }
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <div className="w-8 h-8 border-4 border-t-[#ff5a1f] border-slate-200 rounded-full animate-spin mb-3" />
+            <p className="text-xs font-evolventa">Загрузка сеансов...</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {historyBookings.length > 0 ? (
+              historyBookings.map((booking) => {
+                const serviceName = booking.serviceName;
+                
+                let statusLabel = '';
+                let statusClass = '';
+                if (booking.status === 'completed') {
+                  statusLabel = 'Выполнена';
+                  statusClass = 'bg-emerald-50 text-emerald-600 border border-emerald-100/50';
+                } else if (booking.status === 'cancelled') {
+                  statusLabel = 'Отменена';
+                  statusClass = 'bg-red-50 text-red-500 border border-red-100/50';
+                } else if (booking.status === 'noshow') {
+                  statusLabel = 'Не пришел';
+                  statusClass = 'bg-slate-100 text-slate-500 border border-slate-200/50';
+                }
 
-              return (
-                <div
-                  key={booking.id}
-                  onClick={() => setSelectedBooking(booking)}
-                  className="p-4 rounded-[24px] bg-white border border-slate-200/60 flex flex-col gap-3 cursor-pointer hover:border-slate-300 transition-colors active:bg-slate-50"
-                >
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                    <span className="text-[11px] font-extrabold text-slate-400">
-                      {booking.date} в {booking.time}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${statusClass}`}>
-                      {statusLabel}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-end">
-                    <div className="text-left">
-                      <p className="text-[14px] font-black text-slate-800 font-evolventa mb-0.5">{serviceName}</p>
-                      <p className="text-[11px] font-bold text-slate-400">Клиент: {booking.clientName}</p>
+                return (
+                  <div
+                    key={booking.id}
+                    onClick={() => setSelectedBooking(booking)}
+                    className="p-4 rounded-[24px] bg-white border border-slate-200/60 flex flex-col gap-3 cursor-pointer hover:border-slate-300 transition-colors active:bg-slate-50"
+                  >
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                      <span className="text-[11px] font-extrabold text-slate-400">
+                        {booking.date} в {booking.time}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${statusClass}`}>
+                        {statusLabel}
+                      </span>
                     </div>
-                    <span className="text-[13px] font-black text-slate-800 font-evolventa">{booking.price.toLocaleString('ru-RU')} сум</span>
+                    <div className="flex justify-between items-end">
+                      <div className="text-left">
+                        <p className="text-[14px] font-black text-slate-800 font-evolventa mb-0.5">{serviceName}</p>
+                        <p className="text-[11px] font-bold text-slate-400">Клиент: {booking.clientName}</p>
+                      </div>
+                      <span className="text-[13px] font-black text-slate-800 font-evolventa">{booking.price.toLocaleString('ru-RU')} сум</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-12 bg-white rounded-[24px] border border-slate-200/50 text-slate-400 text-[12px] font-bold font-evolventa">
-              История сеансов пуста.
-            </div>
-          )}
-        </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-12 bg-white rounded-[24px] border border-slate-200/50 text-slate-400 text-[12px] font-bold font-evolventa">
+                История сеансов пуста.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Booking Details Drawer Overlay */}

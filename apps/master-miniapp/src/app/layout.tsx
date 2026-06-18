@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { MasterProvider } from "@/context/MasterContext";
 
 const evolventa = localFont({
   src: [
@@ -37,7 +38,11 @@ export default function RootLayout({
       lang="ru"
       className={`${evolventa.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-800 font-sans">{children}</body>
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-800 font-sans">
+        <MasterProvider>
+          {children}
+        </MasterProvider>
+      </body>
     </html>
   );
 }

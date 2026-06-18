@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import BottomNav from '../components/layout/BottomNav';
+import { useMaster } from '../context/MasterContext';
+
 
 interface Service {
   id: string;
@@ -49,16 +51,19 @@ const getTashkentDateStr = () => {
 const API_HOST = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function MasterDashboard() {
-  const [authStatus, setAuthStatus] = useState<'loading' | 'link_required' | 'unauthorized' | 'no_params' | 'success'>('loading');
-  const [businessId, setBusinessId] = useState<string>('');
-  const [masterId, setMasterId] = useState<string>('');
-  const [telegramId, setTelegramId] = useState<string>('');
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  
-  const [currentMaster, setCurrentMaster] = useState<Master | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
+  const {
+    authStatus,
+    businessId,
+    masterId,
+    telegramId,
+    currentMaster,
+    services,
+    toggleMasterActive,
+    handleLinkAccount,
+    errorMessage
+  } = useMaster();
+
   const [bookings, setBookings] = useState<Booking[]>([]);
-  
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
@@ -67,151 +72,6 @@ export default function MasterDashboard() {
   useEffect(() => {
     setSelectedDate(getTashkentDateStr());
   }, []);
-
-  // 1. Detect Telegram / Query Params & Verify Access
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        let qB = params.get('b') || params.get('business_id');
-
-        if (!qB && window.location.pathname && window.location.pathname !== '/') {
-          const pathParts = window.location.pathname.split('/').filter(Boolean);
-          const systemRoutes = ['profile', 'history'];
-          if (pathParts.length > 0 && !systemRoutes.includes(pathParts[0])) {
-            qB = pathParts[0];
-          }
-        }
-
-        const qM = params.get('m') || params.get('master_id');
-        const qTg = params.get('tg_id') || params.get('telegram_id');
-        const qStartParam = params.get('tgWebAppStartParam') || params.get('start_param') || params.get('startapp') || '';
-
-        const tg = (window as any).Telegram?.WebApp;
-        let tgStartParam = '';
-        let tgUserId = '';
-        
-        if (tg) {
-          tg.ready();
-          tg.expand();
-          tgStartParam = tg.initDataUnsafe?.start_param || qStartParam || '';
-          if (tg.initDataUnsafe?.user) {
-            tgUserId = String(tg.initDataUnsafe.user.id);
-          }
-        } else {
-          tgStartParam = qStartParam;
-        }
-
-        let finalB = qB || '';
-        let finalM = qM || '';
-        let finalTg = qTg || tgUserId || '';
-
-        if (tgStartParam) {
-          const parts = tgStartParam.split('_');
-          if (parts.length >= 2) {
-            // Check if the first part is a valid UUID
-            const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-            if (uuidPattern.test(parts[0])) {
-              finalB = parts[0];
-              finalM = parts.slice(1).join('_');
-            } else {
-              finalB = parts.slice(0, -1).join('_');
-              finalM = parts[parts.length - 1];
-            }
-          }
-        }
-
-        if (!finalB) finalB = localStorage.getItem('master_business_id') || '';
-        if (!finalM) finalM = localStorage.getItem('master_id') || '';
-        if (!finalTg) finalTg = localStorage.getItem('master_telegram_id') || '';
-
-        if (!finalB || (!finalM && !finalTg)) {
-          setAuthStatus('no_params');
-          return;
-        }
-
-        setBusinessId(finalB);
-        setMasterId(finalM);
-        setTelegramId(finalTg);
-
-        localStorage.setItem('master_business_id', finalB);
-        if (finalM) localStorage.setItem('master_id', finalM);
-        if (finalTg) localStorage.setItem('master_telegram_id', finalTg);
-
-        // Fetch verify status
-        const url = `${API_HOST}/api/v1/public/masters/verify?business_id=${finalB}&master_id=${finalM}&telegram_id=${finalTg}`;
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-          if (res.status === 404) {
-            setErrorMessage('Профиль мастера не найден в системе.');
-            setAuthStatus('unauthorized');
-          } else {
-            setErrorMessage('Ошибка сервера при проверке доступа.');
-            setAuthStatus('unauthorized');
-          }
-          return;
-        }
-
-        const data = await res.json();
-        
-        if (data.master) {
-          const m = data.master;
-          setMasterId(m.id);
-          localStorage.setItem('master_id', m.id);
-          setCurrentMaster({
-            id: m.id,
-            name: m.name,
-            avatar: m.avatar || '',
-            phone: m.phone || '',
-            rating: m.rating || 5.0,
-            isActive: m.is_active,
-            telegramId: m.telegram_id
-          });
-        }
-
-        if (data.status === 'link_required') {
-          if (!finalTg) {
-            setErrorMessage('Для привязки кабинета откройте его внутри Telegram.');
-            setAuthStatus('unauthorized');
-          } else {
-            setAuthStatus('link_required');
-          }
-        } else if (data.status === 'success') {
-          setAuthStatus('success');
-        } else {
-          setErrorMessage(data.message || 'Доступ к кабинету ограничен.');
-          setAuthStatus('unauthorized');
-        }
-      } catch (err) {
-        console.error(err);
-        setErrorMessage('Не удалось связаться с сервером.');
-        setAuthStatus('unauthorized');
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  // 2. Fetch Master Services & Bookings on verification success
-  const fetchServices = async () => {
-    if (!businessId) return;
-    try {
-      const res = await fetch(`${API_HOST}/api/v1/public/businesses/${businessId}/services`);
-      if (res.ok) {
-        const data = await res.json();
-        const mapped = data.map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          price: s.price,
-          duration: s.duration
-        }));
-        setServices(mapped);
-      }
-    } catch (err) {
-      console.error('Error fetching services:', err);
-    }
-  };
 
   const fetchBookings = async (dateStr: string) => {
     if (!masterId || !businessId || !telegramId) return;
@@ -244,86 +104,6 @@ export default function MasterDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (authStatus === 'success') {
-      fetchServices();
-    }
-  }, [authStatus, businessId]);
-
-  useEffect(() => {
-    if (authStatus === 'success' && selectedDate) {
-      fetchBookings(selectedDate);
-    }
-  }, [authStatus, selectedDate, masterId, businessId, telegramId]);
-
-  // 3. Link Telegram account handler
-  const handleLinkAccount = async () => {
-    if (!businessId || !masterId || !telegramId) return;
-    setAuthStatus('loading');
-    try {
-      const res = await fetch(`${API_HOST}/api/v1/public/masters/link`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          business_id: businessId,
-          master_id: masterId,
-          telegram_id: telegramId
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === 'success') {
-          if (data.master) {
-            const m = data.master;
-            setCurrentMaster({
-              id: m.id,
-              name: m.name,
-              avatar: m.avatar || '',
-              phone: m.phone || '',
-              rating: m.rating || 5.0,
-              isActive: m.is_active,
-              telegramId: m.telegram_id
-            });
-          }
-          setAuthStatus('success');
-        } else {
-          setErrorMessage(data.message || 'Ошибка при привязке аккаунта.');
-          setAuthStatus('unauthorized');
-        }
-      } else {
-        setErrorMessage('Не удалось привязать аккаунт.');
-        setAuthStatus('unauthorized');
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMessage('Ошибка сети при привязке.');
-      setAuthStatus('unauthorized');
-    }
-  };
-
-  // 4. Toggle On Duty status handler
-  const toggleMasterActive = async () => {
-    if (!currentMaster || !masterId || !telegramId) return;
-    const nextStatus = !currentMaster.isActive;
-    try {
-      const res = await fetch(`${API_HOST}/api/v1/public/masters/${masterId}/active`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          is_active: nextStatus,
-          telegram_id: telegramId
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentMaster(prev => prev ? { ...prev, isActive: data.is_active } : null);
-      }
-    } catch (err) {
-      console.error('Error toggling active status:', err);
-    }
-  };
-
-  // 5. Update Booking Status handler
   const handleUpdateBookingStatus = async (bookingId: string, nextStatus: 'confirmed' | 'completed' | 'cancelled' | 'noshow') => {
     if (!telegramId) return;
     try {
@@ -343,6 +123,12 @@ export default function MasterDashboard() {
       console.error('Error updating booking status:', err);
     }
   };
+
+  useEffect(() => {
+    if (authStatus === 'success' && selectedDate) {
+      fetchBookings(selectedDate);
+    }
+  }, [authStatus, selectedDate, masterId, businessId, telegramId]);
 
   // 6. Calendar Dates Navigation Generator
   const bookingDates = useMemo(() => {
@@ -394,76 +180,6 @@ export default function MasterDashboard() {
     return services.find((s) => s.id === id)?.duration || 30;
   };
 
-  // --- RENDER STATES ---
-
-  if (authStatus === 'loading') {
-    return (
-      <div className="h-screen bg-slate-900 flex flex-col items-center justify-center text-white px-6">
-        <div className="w-12 h-12 border-4 border-t-[#ff5a1f] border-slate-700 rounded-full animate-spin mb-4" />
-        <p className="text-sm font-semibold tracking-wide text-slate-400 font-evolventa">Проверка прав доступа...</p>
-      </div>
-    );
-  }
-
-  if (authStatus === 'no_params') {
-    return (
-      <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white px-6 text-center select-none">
-        <div className="w-16 h-16 rounded-3xl bg-[#ff5a1f]/10 border border-[#ff5a1f]/20 flex items-center justify-center text-[#ff5a1f] mb-6">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-black font-evolventa tracking-tight mb-2">Кабинет Мастера Bronly</h3>
-        <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-          Пожалуйста, откройте это приложение через официального Telegram-бота по вашей персональной ссылке.
-        </p>
-      </div>
-    );
-  }
-
-  if (authStatus === 'unauthorized') {
-    return (
-      <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white px-6 text-center select-none">
-        <div className="w-16 h-16 rounded-3xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-6">
-          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-black font-evolventa tracking-tight mb-2">Доступ ограничен</h3>
-        <p className="text-xs text-slate-400 max-w-xs leading-relaxed mb-6">
-          {errorMessage || 'Данный Telegram-аккаунт не имеет доступа к этому кабинету мастера.'}
-        </p>
-        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-evolventa">
-          Bronly Security System
-        </span>
-      </div>
-    );
-  }
-
-  if (authStatus === 'link_required') {
-    return (
-      <div className="h-screen bg-slate-900 flex flex-col items-center justify-center text-white px-6 text-center select-none">
-        <div className="w-20 h-20 rounded-full bg-slate-800 border-2 border-[#ff5a1f]/30 flex items-center justify-center text-3xl font-black text-[#ff5a1f] mb-6 font-evolventa">
-          {currentMaster ? (currentMaster.avatar && currentMaster.avatar.length <= 3 ? currentMaster.avatar : currentMaster.name.split(' ').map(n=>n[0]).join('').slice(0,2)) : 'М'}
-        </div>
-        <h3 className="text-lg font-black font-evolventa tracking-tight mb-1">Привязка кабинета</h3>
-        <p className="text-sm font-bold text-[#ff5a1f] mb-4 font-evolventa">{currentMaster?.name}</p>
-        
-        <p className="text-xs text-slate-400 max-w-xs leading-relaxed mb-8">
-          Вы хотите привязать этот Telegram-аккаунт к вашему рабочему кабинету в системе Bronly? После этого вход будет доступен только с вашего аккаунта.
-        </p>
-
-        <button
-          onClick={handleLinkAccount}
-          className="w-full max-w-xs py-3.5 bg-[#ff5a1f] hover:bg-[#e04f1a] text-white rounded-2xl text-xs font-black uppercase tracking-wider font-evolventa active:scale-95 smooth-transition cursor-pointer shadow-lg shadow-[#ff5a1f]/20"
-        >
-          Привязать этот Telegram
-        </button>
-      </div>
-    );
-  }
-
-  // Verification Success state
   if (!currentMaster) return null;
 
   return (
