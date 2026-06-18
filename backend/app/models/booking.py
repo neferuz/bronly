@@ -18,6 +18,7 @@ class Booking(Base):
     price = Column(Integer, nullable=False)
     comment = Column(String, nullable=True)
     status = Column(String, default="new")  # new, confirmed, completed, cancelled, noshow
+    review_message_id = Column(Integer, nullable=True)
     
     business = relationship("Business", back_populates="bookings")
     master = relationship("Master", back_populates="bookings")

@@ -40,9 +40,10 @@ def delete_bot_webhook(bot_token: str):
 def send_telegram_message(bot_token: str, chat_id: str, text: str, reply_markup: dict = None):
     """
     Send HTML-formatted text message using bot token.
+    Returns message_id if successful, otherwise None.
     """
     if not bot_token or not chat_id:
-        return
+        return None
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -56,8 +57,12 @@ def send_telegram_message(bot_token: str, chat_id: str, text: str, reply_markup:
             resp = client.post(url, json=payload)
             if not resp.is_success:
                 logger.error(f"Telegram sendMessage failed: {resp.status_code} - {resp.text}")
+                return None
+            data = resp.json()
+            return data.get("result", {}).get("message_id")
     except Exception as e:
         logger.error(f"Failed to send telegram message to {chat_id}: {e}")
+        return None
 
 def send_telegram_photo(bot_token: str, chat_id: str, photo_url: str, caption: str = "", reply_markup: dict = None):
     """
@@ -219,7 +224,10 @@ def notify_booking_status_updated(booking, db):
                     ]
                 ]
             }
-            send_telegram_message(business.client_bot_token, booking.client_telegram_id, client_msg, reply_markup)
+            msg_id = send_telegram_message(business.client_bot_token, booking.client_telegram_id, client_msg, reply_markup)
+            if msg_id:
+                booking.review_message_id = msg_id
+                db.commit()
         else:
             client_msg = (
                 f"<b>Статус вашей записи в {business.name} обновлен!</b>\n\n"

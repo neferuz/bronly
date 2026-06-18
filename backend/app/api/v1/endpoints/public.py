@@ -17,7 +17,7 @@ from app.models.master import Master
 from app.models.review import Review
 from app.models.business import Business
 from app.schemas.review import ReviewCreate, ReviewOut
-from app.core.telegram_bot import notify_booking_created, notify_booking_status_updated
+from app.core.telegram_bot import notify_booking_created, notify_booking_status_updated, edit_message_text
 
 
 
@@ -391,6 +391,14 @@ def create_booking_review(
             master.rating = round(float(avg_rating), 1)
             db.add(master)
             db.commit()
+            
+    # Edit the telegram message to say thank you and remove the button
+    if booking.review_message_id and booking.business and booking.business.client_bot_token and booking.client_telegram_id:
+        msg = f"<b>Спасибо за ваш отзыв!</b> Мы очень ценим ваше мнение 💖"
+        edit_message_text(booking.business.client_bot_token, booking.client_telegram_id, booking.review_message_id, msg)
+        booking.review_message_id = None
+        db.add(booking)
+        db.commit()
             
     return db_review
 
