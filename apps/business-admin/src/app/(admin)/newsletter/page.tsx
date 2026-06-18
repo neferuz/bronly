@@ -94,6 +94,16 @@ export default function Newsletter() {
       return;
     }
 
+    let targetCount = 0;
+    if (audience === 'all') targetCount = audienceStats.total;
+    else if (audience === 'frequent') targetCount = audienceStats.frequent;
+    else if (audience === 'inactive') targetCount = audienceStats.inactive;
+
+    if (targetCount === 0) {
+      showToast('В выбранной категории нет клиентов для отправки.', 'error');
+      return;
+    }
+
     setIsSending(true);
     try {
       const token = localStorage.getItem('business_admin_logged_in');
