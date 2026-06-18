@@ -255,6 +255,11 @@ const BusinessProviderInner: React.FC<{ children: ReactNode }> = ({ children }) 
 
   useEffect(() => {
     fetchData();
+    // Auto-refresh data every 15 seconds
+    const interval = setInterval(() => {
+      fetchData();
+    }, 15000);
+    return () => clearInterval(interval);
   }, [fetchData]);
 
   // Action methods with API integration
