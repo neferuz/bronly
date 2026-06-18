@@ -650,8 +650,21 @@ export default function ClientMiniApp() {
       
       {/* Toast Alert Popup */}
       {toastMessage && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-800 animate-bounce">
-          <span>{toastMessage}</span>
+        <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-[100] bg-white/90 backdrop-blur-xl text-slate-800 text-[12px] font-extrabold px-4 py-2.5 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/80 flex items-center gap-2.5 animate-in slide-in-from-top-4 fade-in duration-300 font-evolventa">
+          {toastMessage.includes('✅') || toastMessage.includes('успешно') || toastMessage.includes('Успешно') ? (
+            <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            </div>
+          ) : toastMessage.includes('❌') || toastMessage.includes('ошибка') || toastMessage.includes('Ошибка') || toastMessage.includes('заполните') ? (
+            <div className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </div>
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-[var(--primary)] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+          )}
+          <span className="whitespace-nowrap tracking-wide">{toastMessage.replace('✅', '').replace('❌', '').trim()}</span>
         </div>
       )}
 
@@ -1128,71 +1141,11 @@ export default function ClientMiniApp() {
                        <p className="text-[13px] font-bold text-slate-800">{selectedMaster?.name || 'Любой свободный мастер'}</p>
                      </div>
                    </div>
-                   <div className="py-2.5 px-4 bg-[var(--primary)]/5 flex items-center justify-between border-b border-slate-100/80">
+                   <div className="py-2.5 px-4 bg-[var(--primary)]/5 flex items-center justify-between">
                      <div>
                        <p className="text-[9px] font-extrabold text-[var(--primary)] uppercase tracking-widest mb-0.5">Дата и время визита</p>
                        <p className="text-[15px] font-black font-evolventa text-[var(--primary)]">{getSelectedDateText()}, {selectedTime}</p>
                      </div>
-                   </div>
-                   <div className="py-2.5 px-4 border-b border-slate-100/80">
-                     <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Ваше имя</p>
-                     <input
-                       type="text"
-                       placeholder="Имя"
-                       value={clientName}
-                       onChange={(e) => setClientName(e.target.value)}
-                       className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:border-[var(--primary)]/30 focus:bg-white text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 transition-colors font-bold font-evolventa"
-                     />
-                   </div>
-                   <div className="py-2.5 px-4">
-                     <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">Номер телефона</p>
-                     <input
-                        type="tel"
-                        placeholder="+998 90 123-45-67"
-                        value={clientPhone}
-                        onChange={(e) => setClientPhone(e.target.value)}
-                        readOnly={typeof window !== 'undefined' && !!(window as any).Telegram?.WebApp?.initDataUnsafe?.user}
-                        className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-100 focus:border-[var(--primary)]/30 focus:bg-white text-slate-800 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 transition-colors font-bold font-evolventa"
-                      />
-                      {clientPhone === '+998 90 123-45-67' && typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const tg = (window as any).Telegram?.WebApp;
-                            if (tg && typeof tg.requestContact === 'function') {
-                              tg.requestContact((sent: boolean, response: any) => {
-                                if (sent) {
-                                  let phoneNum = response?.responseUnsafe?.contact?.phone_number || response?.contact?.phone_number;
-                                  if (phoneNum) {
-                                    if (!phoneNum.startsWith('+')) {
-                                      phoneNum = '+' + phoneNum;
-                                    }
-                                    setClientPhone(phoneNum);
-                                    localStorage.setItem('client_phone', phoneNum);
-                                    showToast('✅ Номер телефона привязан!');
-                                    
-                                    const chatId = tg.initDataUnsafe?.user?.id ? String(tg.initDataUnsafe.user.id) : '';
-                                    if (chatId && businessId) {
-                                      fetch(`${API_HOST}/api/v1/public/telegram/notify-contact-shared`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                          business_id: businessId,
-                                          chat_id: chatId,
-                                          phone: phoneNum
-                                        })
-                                      }).catch(err => console.error("Failed to send contact shared notification:", err));
-                                    }
-                                  }
-                                }
-                              });
-                            }
-                          }}
-                          className="mt-2 w-full py-2 rounded-xl bg-[var(--primary)]/10 text-[var(--primary)] text-[11px] font-extrabold font-evolventa hover:bg-[var(--primary)]/20 active:scale-95 smooth-transition cursor-pointer text-center"
-                        >
-                          📱 Подтвердить номер телефона
-                        </button>
-                      )}
                    </div>
                 </div>
               </div>
