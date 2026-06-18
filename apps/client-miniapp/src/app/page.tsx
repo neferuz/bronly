@@ -154,6 +154,12 @@ export default function ClientMiniApp() {
           if (typeof tg.expand === 'function') {
             try { tg.expand(); } catch(e) {}
           }
+          if (typeof tg.enableClosingConfirmation === 'function') {
+            try { tg.enableClosingConfirmation(); } catch(e) {}
+          }
+          if (typeof tg.disableVerticalSwipes === 'function') {
+            try { tg.disableVerticalSwipes(); } catch(e) {}
+          }
           const tgUser = tg.initDataUnsafe?.user;
           if (tgUser) {
             if (!finalName) {

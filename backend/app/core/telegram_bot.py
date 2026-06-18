@@ -57,6 +57,31 @@ def send_telegram_message(bot_token: str, chat_id: str, text: str, reply_markup:
     except Exception as e:
         logger.error(f"Failed to send telegram message to {chat_id}: {e}")
 
+def send_telegram_photo(bot_token: str, chat_id: str, photo_url: str, caption: str = "", reply_markup: dict = None):
+    """
+    Send a photo with an optional caption.
+    """
+    if not bot_token or not chat_id:
+        return
+    
+    url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+    payload = {
+        "chat_id": chat_id,
+        "photo": photo_url,
+        "caption": caption,
+        "parse_mode": "HTML"
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+        
+    try:
+        with httpx.Client() as client:
+            resp = client.post(url, json=payload)
+            if not resp.is_success:
+                logger.error(f"Telegram sendPhoto failed: {resp.status_code} - {resp.text}")
+    except Exception as e:
+        logger.error(f"Failed to send telegram photo to {chat_id}: {e}")
+
 def answer_callback_query(bot_token: str, callback_query_id: str, text: str = None):
     """
     Acknowledge Telegram callback query.

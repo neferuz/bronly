@@ -83,8 +83,18 @@ export function MasterProvider({ children }: { children: React.ReactNode }) {
       let tgUserId = '';
       
       if (tg) {
-        tg.ready();
-        tg.expand();
+        if (typeof tg.ready === 'function') {
+          try { tg.ready(); } catch(e) {}
+        }
+        if (typeof tg.expand === 'function') {
+          try { tg.expand(); } catch(e) {}
+        }
+        if (typeof tg.enableClosingConfirmation === 'function') {
+          try { tg.enableClosingConfirmation(); } catch(e) {}
+        }
+        if (typeof tg.disableVerticalSwipes === 'function') {
+          try { tg.disableVerticalSwipes(); } catch(e) {}
+        }
         tgStartParam = tg.initDataUnsafe?.start_param || qStartParam || '';
         if (tg.initDataUnsafe?.user) {
           tgUserId = String(tg.initDataUnsafe.user.id);

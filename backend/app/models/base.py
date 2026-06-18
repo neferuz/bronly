@@ -4,5 +4,6 @@ from app.models.master import Master
 from app.models.booking import Booking
 from app.models.service import Service, master_services
 from app.models.review import Review
+from app.models.broadcast import BroadcastHistory
 
 

@@ -277,9 +277,7 @@ export default function Clients() {
                     <td className="py-3 px-5">
                       {c.telegramId ? (
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[9px] font-black border border-sky-100 bg-sky-50 text-sky-600 font-evolventa leading-none">
-                          <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.82-.77 4.54-1.09 6.24-.13.72-.4 1.13-.65 1.16-.57.05-1 .38-1.55.74-.86.56-1.35.91-2.18 1.46-.96.63-1.68 1.09-2.31 1.63-.44.38-.85.73-1.28.71-.43-.02-.85-.35-1.22-.65-.77-.62-2.32-1.92-3.14-2.56-.6-.47-.94-.78-.92-1.12.02-.34.36-.67.92-.98 3.5-1.97 7.73-4.22 11.23-5.7.53-.22 1.02-.38 1.41-.36.36.02.73.18.99.41.24.21.32.48.29.98z"/>
-                          </svg>
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Telegram_Messenger.png" alt="Telegram" className="w-3 h-3" />
                           {c.telegramId}
                         </span>
                       ) : (
@@ -369,9 +367,7 @@ export default function Clients() {
 
                     {c.telegramId && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black border border-sky-100 bg-sky-50 text-sky-600 font-evolventa leading-none shrink-0">
-                        <svg className="w-2 h-2" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.82-.77 4.54-1.09 6.24-.13.72-.4 1.13-.65 1.16-.57.05-1 .38-1.55.74-.86.56-1.35.91-2.18 1.46-.96.63-1.68 1.09-2.31 1.63-.44.38-.85.73-1.28.71-.43-.02-.85-.35-1.22-.65-.77-.62-2.32-1.92-3.14-2.56-.6-.47-.94-.78-.92-1.12.02-.34.36-.67.92-.98 3.5-1.97 7.73-4.22 11.23-5.7.53-.22 1.02-.38 1.41-.36.36.02.73.18.99.41.24.21.32.48.29.98z"/>
-                        </svg>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Telegram_Messenger.png" alt="Telegram" className="w-3 h-3" />
                         {c.telegramId}
                       </span>
                     )}

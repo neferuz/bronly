@@ -42,6 +42,7 @@ export default function RootLayout({
         <MasterProvider>
           {children}
         </MasterProvider>
+        <script src="https://telegram.org/js/telegram-web-app.js" async></script>
       </body>
     </html>
   );

@@ -46,3 +46,4 @@ class Business(Base):
     masters = relationship("Master", back_populates="business", cascade="all, delete-orphan")
     bookings = relationship("Booking", back_populates="business", cascade="all, delete-orphan")
     services = relationship("Service", back_populates="business", cascade="all, delete-orphan")
+    broadcasts = relationship("BroadcastHistory", back_populates="business", cascade="all, delete-orphan")

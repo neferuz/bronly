@@ -57,7 +57,7 @@ async def custom_middleware(request: Request, call_next):
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS] + ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://127.0.0.1:3000"],
         allow_origin_regex=r"https?://.*\.bronly-hub\.uz|https?://bronly-hub\.uz",
         allow_credentials=True,
         allow_methods=["*"],

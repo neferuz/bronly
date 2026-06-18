@@ -165,4 +165,90 @@ def delete_business_review_reply(
     db.refresh(review)
     return review
 
+from typing import Optional
+from sqlalchemy import func
+from datetime import datetime, timedelta
+
+class BroadcastRequest(BaseModel):
+    audience: str
+    message_text: str
+    image_url: Optional[str] = None
+
+@router.post("/me/broadcast")
+def send_broadcast_message(
+    payload: BroadcastRequest,
+    db: Session = Depends(get_db),
+    current_business: Business = Depends(get_current_business)
+):
+    """
+    Send a broadcast message to clients based on audience filter.
+    """
+    from app.models.booking import Booking
+    from app.models.broadcast import BroadcastHistory
+    from app.core.telegram_bot import send_telegram_message, send_telegram_photo
+    
+    if not current_business.client_bot_token:
+        raise HTTPException(status_code=400, detail="Telegram bot token not configured for this business.")
+
+    query = db.query(Booking.client_telegram_id).filter(
+        Booking.business_id == current_business.id,
+        Booking.client_telegram_id.isnot(None)
+    ).group_by(Booking.client_telegram_id)
+
+    if payload.audience == "frequent":
+        query = query.having(func.count(Booking.id) >= 3)
+    elif payload.audience == "inactive":
+        thirty_days_ago = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
+        query = query.having(func.max(Booking.date) < thirty_days_ago)
+        
+    client_ids = [row[0] for row in query.all()]
+    
+    if not client_ids:
+        return {"status": "success", "sent_count": 0, "message": "No clients match the selected audience."}
+
+    sent_count = 0
+    for chat_id in client_ids:
+        try:
+            if payload.image_url:
+                send_telegram_photo(
+                    bot_token=current_business.client_bot_token,
+                    chat_id=chat_id,
+                    photo_url=payload.image_url,
+                    caption=payload.message_text
+                )
+            else:
+                send_telegram_message(
+                    bot_token=current_business.client_bot_token,
+                    chat_id=chat_id,
+                    text=payload.message_text
+                )
+            sent_count += 1
+        except Exception as e:
+            logger.error(f"Failed to send broadcast to {chat_id}: {e}")
+
+    # Save to history
+    history = BroadcastHistory(
+        business_id=current_business.id,
+        audience=payload.audience,
+        message_text=payload.message_text,
+        image_url=payload.image_url,
+        sent_count=sent_count
+    )
+    db.add(history)
+    db.commit()
+
+    return {"status": "success", "sent_count": sent_count}
+
+@router.get("/me/broadcasts")
+def get_broadcast_history(
+    db: Session = Depends(get_db),
+    current_business: Business = Depends(get_current_business)
+):
+    """
+    Get the broadcast history for the current business.
+    """
+    from app.models.broadcast import BroadcastHistory
+    history = db.query(BroadcastHistory).filter(BroadcastHistory.business_id == current_business.id).order_by(BroadcastHistory.created_at.desc()).all()
+    return history
+
 
