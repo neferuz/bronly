@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
@@ -350,6 +350,7 @@ def read_public_booking(booking_id: str, db: Session = Depends(get_db)):
 def create_booking_review(
     booking_id: str,
     review_in: ReviewCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -395,7 +396,13 @@ def create_booking_review(
     # Edit the telegram message to say thank you and remove the button
     if booking.review_message_id and booking.business and booking.business.client_bot_token and booking.client_telegram_id:
         msg = f"<b>Спасибо за ваш отзыв!</b> Мы очень ценим ваше мнение 💖"
-        edit_message_text(booking.business.client_bot_token, booking.client_telegram_id, booking.review_message_id, msg)
+        background_tasks.add_task(
+            edit_message_text,
+            booking.business.client_bot_token, 
+            booking.client_telegram_id, 
+            booking.review_message_id, 
+            msg
+        )
         booking.review_message_id = None
         db.add(booking)
         db.commit()
