@@ -392,12 +392,7 @@ export default function Newsletter() {
                         </div>
                         {item.image_url && (
                            <div className="mt-3 pl-4">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-2xl text-[10px] font-bold bg-slate-50 text-slate-500 border border-slate-200 font-evolventa">
-                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                Прикреплено изображение
-                              </span>
+                              <img src={item.image_url} alt="Прикрепленное изображение" className="w-48 max-h-64 object-cover rounded-xl border border-slate-200" />
                            </div>
                         )}
                       </div>

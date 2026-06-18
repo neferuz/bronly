@@ -1,5 +1,7 @@
 import httpx
 import logging
+import base64
+import json
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -65,6 +67,35 @@ def send_telegram_photo(bot_token: str, chat_id: str, photo_url: str, caption: s
         return
     
     url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+    
+    # Handle Base64 image
+    if photo_url.startswith("data:image"):
+        try:
+            header, encoded = photo_url.split(",", 1)
+            image_data = base64.b64decode(encoded)
+            
+            payload = {
+                "chat_id": chat_id,
+                "caption": caption,
+                "parse_mode": "HTML"
+            }
+            if reply_markup:
+                payload["reply_markup"] = json.dumps(reply_markup)
+                
+            files = {
+                "photo": ("image.jpg", image_data, "image/jpeg")
+            }
+            
+            with httpx.Client(timeout=30.0) as client:
+                resp = client.post(url, data=payload, files=files)
+                if not resp.is_success:
+                    logger.error(f"Telegram sendPhoto (multipart) failed: {resp.status_code} - {resp.text}")
+            return
+        except Exception as e:
+            logger.error(f"Failed to process and send base64 image: {e}")
+            return
+            
+    # Handle regular URL or file_id
     payload = {
         "chat_id": chat_id,
         "photo": photo_url,
@@ -75,7 +106,7 @@ def send_telegram_photo(bot_token: str, chat_id: str, photo_url: str, caption: s
         payload["reply_markup"] = reply_markup
         
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=30.0) as client:
             resp = client.post(url, json=payload)
             if not resp.is_success:
                 logger.error(f"Telegram sendPhoto failed: {resp.status_code} - {resp.text}")
