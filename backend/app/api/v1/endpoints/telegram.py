@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
 from sqlalchemy.orm import Session
 import logging
 
@@ -10,7 +10,8 @@ from app.core.telegram_bot import (
     send_telegram_message,
     answer_callback_query,
     edit_message_text,
-    notify_booking_status_updated
+    notify_booking_status_updated,
+    delete_message
 )
 
 router = APIRouter()
@@ -21,6 +22,7 @@ async def telegram_webhook(
     business_id: str,
     bot_type: str,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -71,14 +73,25 @@ async def telegram_webhook(
                 status_text = "подтверждена ✅" if new_status == "confirmed" else "отменена ❌"
                 answer_callback_query(bot_token, cq_id, f"Запись {status_text}")
                 
-                # Edit original message to remove buttons and show result status
-                orig_text = cq["message"]["text"]
-                # Append status to text
-                new_text = orig_text + f"\n\n<b>Статус: Запись {status_text}</b>"
-                edit_message_text(bot_token, chat_id, message_id, new_text, reply_markup={"inline_keyboard": []})
+                # Delete old message
+                background_tasks.add_task(delete_message, bot_token, chat_id, message_id)
+                
+                # Send new message with status
+                new_msg = (
+                    f"<b>Статус записи обновлен: {status_text}</b>\n\n"
+                    f"👤 Клиент: <b>{booking.client_name}</b>\n"
+                    f"📞 Телефон: {booking.client_phone}\n"
+                    f"✂️ Услуга: {booking.service_name}\n"
+                    f"📅 Дата: {booking.date}\n"
+                    f"⏰ Время: {booking.time}\n"
+                )
+                if booking.comment:
+                    new_msg += f"💬 Комментарий: {booking.comment}\n"
+                
+                background_tasks.add_task(send_telegram_message, bot_token, chat_id, new_msg)
                 
                 # Trigger client / master notifications
-                notify_booking_status_updated(booking, db)
+                background_tasks.add_task(notify_booking_status_updated, booking.id, True)
                 
         return {"ok": True}
         

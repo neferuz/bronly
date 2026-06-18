@@ -173,7 +173,7 @@ def create_public_booking(
     )
     
     db_booking = crud_booking.create(db, obj_in=full_booking)
-    background_tasks.add_task(notify_booking_created, db_booking, db)
+    background_tasks.add_task(notify_booking_created, db_booking.id)
     out = BookingOut.model_validate(db_booking)
     if db_booking.master:
         out.master_name = db_booking.master.name
@@ -307,7 +307,7 @@ def update_booking_status_public(
     db.commit()
     db.refresh(booking)
     
-    background_tasks.add_task(notify_booking_status_updated, booking, db)
+    background_tasks.add_task(notify_booking_status_updated, booking.id)
     
     out = BookingOut.model_validate(booking)
     if booking.master:

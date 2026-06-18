@@ -3,6 +3,8 @@ import logging
 import base64
 import json
 from app.core.config import settings
+from app.core.database import SessionLocal
+from app.models.booking import Booking
 
 logger = logging.getLogger(__name__)
 
@@ -155,98 +157,136 @@ def edit_message_text(bot_token: str, chat_id: str, message_id: int, text: str, 
     except Exception as e:
         logger.error(f"Failed to edit message text: {e}")
 
-def notify_booking_created(booking, db):
+def notify_booking_created(booking_id: str):
     """
     Send interactive notification to the master about a new booking.
     """
-    # booking instances are passed dynamically
-    business = booking.business
-    if not business or not business.master_bot_token:
-        return
-    master = booking.master
-    if not master or not master.telegram_id:
-        return
-    
-    currency = business.currency or "сум"
-    msg = (
-        f"<b>🆕 Новая запись!</b>\n\n"
-        f"👤 Клиент: <b>{booking.client_name}</b>\n"
-        f"📞 Телефон: {booking.client_phone}\n"
-        f"✂️ Услуга: {booking.service_name}\n"
-        f"📅 Дата: {booking.date}\n"
-        f"⏰ Время: {booking.time}\n"
-        f"💰 Стоимость: {booking.price} {currency}\n"
-    )
-    if booking.comment:
-        msg += f"💬 Комментарий: {booking.comment}\n"
+    db = SessionLocal()
+    try:
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            return
+            
+        business = booking.business
+        if not business or not business.master_bot_token:
+            return
+        master = booking.master
+        if not master or not master.telegram_id:
+            return
         
-    reply_markup = {
-        "inline_keyboard": [
-            [
-                {"text": "Подтвердить ✅", "callback_data": f"confirm_booking_{booking.id}"},
-                {"text": "Отменить ❌", "callback_data": f"cancel_booking_{booking.id}"}
+        currency = business.currency or "сум"
+        msg = (
+            f"<b>🆕 Новая запись!</b>\n\n"
+            f"👤 Клиент: <b>{booking.client_name}</b>\n"
+            f"📞 Телефон: {booking.client_phone}\n"
+            f"✂️ Услуга: {booking.service_name} ({booking.duration} мин)\n"
+            f"💵 Стоимость: {booking.price} {currency}\n"
+            f"📅 Дата: {booking.date}\n"
+            f"⏰ Время: {booking.time}\n"
+        )
+        if booking.comment:
+            msg += f"💬 Комментарий: {booking.comment}\n"
+            
+        reply_markup = {
+            "inline_keyboard": [
+                [
+                    {"text": "Подтвердить ✅", "callback_data": f"confirm_booking_{booking.id}"},
+                    {"text": "Отменить ❌", "callback_data": f"cancel_booking_{booking.id}"}
+                ]
             ]
-        ]
-    }
-    send_telegram_message(business.master_bot_token, master.telegram_id, msg, reply_markup)
+        }
+        send_telegram_message(business.master_bot_token, master.telegram_id, msg, reply_markup)
+    finally:
+        db.close()
 
-def notify_booking_status_updated(booking, db):
+def notify_booking_status_updated(booking_id: str, exclude_master: bool = False):
     """
     Send update notifications to client and master on status changes.
     """
-    business = booking.business
-    if not business:
-        return
-    
-    status_ru = {
-        "new": "Новая",
-        "confirmed": "Подтверждена ✅",
-        "completed": "Завершена 🎉",
-        "cancelled": "Отменена ❌",
-        "noshow": "Не явился ⚠️"
-    }.get(booking.status, booking.status)
-    
-    master = booking.master
-    
-    # 1. Notify client
-    if business.client_bot_token and booking.client_telegram_id:
-        if booking.status == "completed":
-            client_msg = (
-                f"<b>Спасибо за ваш визит в {business.name}!</b>\n\n"
-                f"Как прошел ваш сеанс у мастера <b>{master.name if master else 'специалиста'}</b>?\n"
-                f"Пожалуйста, оцените качество услуг, это поможет нам стать лучше. ⭐"
-            )
-            review_url = f"{settings.CLIENT_MINIAPP_URL}/review?b={business.id}&booking_id={booking.id}"
-            reply_markup = {
-                "inline_keyboard": [
-                    [
-                        {"text": "Оценить визит ⭐", "web_app": {"url": review_url}}
+    db = SessionLocal()
+    try:
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            return
+            
+        business = booking.business
+        if not business:
+            return
+        
+        status_ru = {
+            "new": "Новая",
+            "confirmed": "Подтверждена ✅",
+            "completed": "Завершена 🎉",
+            "cancelled": "Отменена ❌",
+            "noshow": "Не явился ⚠️"
+        }.get(booking.status, booking.status)
+        
+        master = booking.master
+        
+        # 1. Notify client
+        if business.client_bot_token and booking.client_telegram_id:
+            if booking.status == "completed":
+                client_msg = (
+                    f"<b>Спасибо за ваш визит в {business.name}!</b>\n\n"
+                    f"Как прошел ваш сеанс у мастера <b>{master.name if master else 'специалиста'}</b>?\n"
+                    f"Пожалуйста, оцените качество услуг, это поможет нам стать лучше. ⭐"
+                )
+                review_url = f"{settings.CLIENT_MINIAPP_URL}/review?b={business.id}&booking_id={booking.id}"
+                reply_markup = {
+                    "inline_keyboard": [
+                        [
+                            {"text": "Оценить визит ⭐", "web_app": {"url": review_url}}
+                        ]
                     ]
-                ]
-            }
-            msg_id = send_telegram_message(business.client_bot_token, booking.client_telegram_id, client_msg, reply_markup)
-            if msg_id:
-                booking.review_message_id = msg_id
-                db.commit()
-        else:
-            client_msg = (
-                f"<b>Статус вашей записи в {business.name} обновлен!</b>\n\n"
+                }
+                msg_id = send_telegram_message(business.client_bot_token, booking.client_telegram_id, client_msg, reply_markup)
+                if msg_id:
+                    booking.review_message_id = msg_id
+                    db.commit()
+            else:
+                client_msg = (
+                    f"<b>Статус вашей записи в {business.name} обновлен!</b>\n\n"
+                    f"✂️ Услуга: {booking.service_name}\n"
+                    f"📅 Дата: {booking.date}\n"
+                    f"⏰ Время: {booking.time}\n"
+                    f"📊 Новый статус: <b>{status_ru}</b>\n"
+                )
+                send_telegram_message(business.client_bot_token, booking.client_telegram_id, client_msg)
+            
+        # 2. Notify master
+        if not exclude_master and business.master_bot_token and master and master.telegram_id:
+            status_ru_master = {
+                "new": "Новая",
+                "confirmed": "Подтверждена",
+                "completed": "Завершена",
+                "cancelled": "Отменена",
+                "noshow": "Неявка"
+            }.get(booking.status, booking.status)
+            
+            master_msg = (
+                f"<b>Статус записи изменен клиентом/админом!</b>\n\n"
+                f"👤 Клиент: <b>{booking.client_name}</b>\n"
                 f"✂️ Услуга: {booking.service_name}\n"
                 f"📅 Дата: {booking.date}\n"
                 f"⏰ Время: {booking.time}\n"
-                f"📊 Новый статус: <b>{status_ru}</b>\n"
+                f"📊 Новый статус: <b>{status_ru_master}</b>\n"
             )
-            send_telegram_message(business.client_bot_token, booking.client_telegram_id, client_msg)
-        
-    # 2. Notify master
-    if business.master_bot_token and master and master.telegram_id:
-        master_msg = (
-            f"<b>Статус записи изменен!</b>\n\n"
-            f"👤 Клиент: {booking.client_name}\n"
-            f"✂️ Услуга: {booking.service_name}\n"
-            f"📅 Дата: {booking.date}\n"
-            f"⏰ Время: {booking.time}\n"
-            f"📊 Новый статус: <b>{status_ru}</b>\n"
-        )
-        send_telegram_message(business.master_bot_token, master.telegram_id, master_msg)
-
+            send_telegram_message(business.master_bot_token, master.telegram_id, master_msg)
+    finally:
+        db.close()
+def delete_message(bot_token: str, chat_id: str, message_id: int):
+    """
+    Delete a message from a chat.
+    """
+    if not bot_token or not chat_id or not message_id:
+        return
+    url = f"https://api.telegram.org/bot{bot_token}/deleteMessage"
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id
+    }
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            client.post(url, json=payload)
+    except Exception as e:
+        logger.error(f"Failed to delete message: {e}")
