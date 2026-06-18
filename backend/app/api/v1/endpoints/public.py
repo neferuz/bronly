@@ -123,6 +123,7 @@ def read_busy_slots(
 def create_public_booking(
     *,
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks,
     booking_in: PublicBookingCreate
 ):
     """
@@ -172,7 +173,7 @@ def create_public_booking(
     )
     
     db_booking = crud_booking.create(db, obj_in=full_booking)
-    notify_booking_created(db_booking, db)
+    background_tasks.add_task(notify_booking_created, db_booking, db)
     out = BookingOut.model_validate(db_booking)
     if db_booking.master:
         out.master_name = db_booking.master.name
@@ -291,6 +292,7 @@ def read_master_bookings(
 def update_booking_status_public(
     booking_id: str,
     req: BookingStatusUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     booking = db.query(Booking).filter(Booking.id == booking_id).first()
@@ -305,7 +307,7 @@ def update_booking_status_public(
     db.commit()
     db.refresh(booking)
     
-    notify_booking_status_updated(booking, db)
+    background_tasks.add_task(notify_booking_status_updated, booking, db)
     
     out = BookingOut.model_validate(booking)
     if booking.master:
