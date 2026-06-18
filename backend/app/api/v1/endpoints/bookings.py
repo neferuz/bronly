@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
@@ -38,6 +38,7 @@ def create_booking(
     *,
     db: Session = Depends(get_db),
     booking_in: BookingCreate,
+    background_tasks: BackgroundTasks,
     current_business: Business = Depends(get_current_business)
 ):
     """
@@ -45,7 +46,7 @@ def create_booking(
     """
     booking_in.business_id = current_business.id
     db_booking = crud_booking.create(db, obj_in=booking_in)
-    notify_booking_created(db_booking, db)
+    background_tasks.add_task(notify_booking_created, db_booking.id)
     return db_booking
 
 
@@ -71,6 +72,7 @@ def update_booking(
     db: Session = Depends(get_db),
     booking_id: str,
     booking_in: BookingUpdate,
+    background_tasks: BackgroundTasks,
     current_business: Business = Depends(get_current_business)
 ):
     """
@@ -82,7 +84,7 @@ def update_booking(
     if booking.business_id != current_business.id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this booking")
     updated_booking = crud_booking.update(db, db_obj=booking, obj_in=booking_in)
-    notify_booking_status_updated(updated_booking, db)
+    background_tasks.add_task(notify_booking_status_updated, updated_booking.id)
     return updated_booking
 
 
@@ -92,6 +94,7 @@ def update_booking_status(
     db: Session = Depends(get_db),
     booking_id: str,
     status_str: str,
+    background_tasks: BackgroundTasks,
     current_business: Business = Depends(get_current_business)
 ):
     """
@@ -108,6 +111,6 @@ def update_booking_status(
         raise HTTPException(status_code=400, detail=f"Invalid status value. Must be one of {valid_statuses}")
         
     updated_booking = crud_booking.update(db, db_obj=booking, obj_in={"status": status_str})
-    notify_booking_status_updated(updated_booking, db)
+    background_tasks.add_task(notify_booking_status_updated, updated_booking.id)
     return updated_booking
 
