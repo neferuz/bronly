@@ -1,4 +1,4 @@
-import httpx
+import requests
 import logging
 import base64
 import json
@@ -19,9 +19,8 @@ def set_bot_webhook(business_id: str, bot_token: str, bot_type: str, webhook_bas
     url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
     webhook_url = f"{webhook_base_url}/api/v1/telegram/webhook/{business_id}/{bot_type}"
     try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(url, json={"url": webhook_url})
-            logger.info(f"Telegram setWebhook for {business_id} ({bot_type}): {resp.status_code} - {resp.text}")
+        resp = requests.post(url, json={"url": webhook_url}, timeout=30.0)
+        logger.info(f"Telegram setWebhook for {business_id} ({bot_type}): {resp.status_code} - {resp.text}")
     except Exception as e:
         logger.error(f"Failed to set webhook for {business_id} ({bot_type}): {e}")
 
@@ -33,9 +32,8 @@ def delete_bot_webhook(bot_token: str):
         return
     url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
     try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(url)
-            logger.info(f"Telegram deleteWebhook response: {resp.status_code} - {resp.text}")
+        resp = requests.post(url, timeout=30.0)
+        logger.info(f"Telegram deleteWebhook response: {resp.status_code} - {resp.text}")
     except Exception as e:
         logger.error(f"Failed to delete webhook: {e}")
 
@@ -55,13 +53,12 @@ def send_telegram_message(bot_token: str, chat_id: str, text: str, reply_markup:
     if reply_markup:
         payload["reply_markup"] = reply_markup
     try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(url, json=payload)
-            if not resp.is_success:
-                logger.error(f"Telegram sendMessage failed: {resp.status_code} - {resp.text}")
-                return None
-            data = resp.json()
-            return data.get("result", {}).get("message_id")
+        resp = requests.post(url, json=payload, timeout=30.0)
+        if resp.status_code != 200:
+            logger.error(f"Telegram sendMessage failed: {resp.status_code} - {resp.text}")
+            return None
+        data = resp.json()
+        return data.get("result", {}).get("message_id")
     except Exception as e:
         logger.error(f"Failed to send telegram message to {chat_id}: {e}")
         return None
@@ -93,9 +90,8 @@ def send_telegram_photo(bot_token: str, chat_id: str, photo_url: str, caption: s
                 "photo": ("image.jpg", image_data, "image/jpeg")
             }
             
-            with httpx.Client(timeout=30.0) as client:
-                resp = client.post(url, data=payload, files=files)
-                if not resp.is_success:
+            with requests.post(url, data=payload, files=files, timeout=30.0) as resp:
+                if resp.status_code != 200:
                     logger.error(f"Telegram sendPhoto (multipart) failed: {resp.status_code} - {resp.text}")
             return
         except Exception as e:
@@ -113,10 +109,9 @@ def send_telegram_photo(bot_token: str, chat_id: str, photo_url: str, caption: s
         payload["reply_markup"] = reply_markup
         
     try:
-        with httpx.Client(timeout=30.0) as client:
-            resp = client.post(url, json=payload)
-            if not resp.is_success:
-                logger.error(f"Telegram sendPhoto failed: {resp.status_code} - {resp.text}")
+        resp = requests.post(url, json=payload, timeout=30.0)
+        if resp.status_code != 200:
+            logger.error(f"Telegram sendPhoto failed: {resp.status_code} - {resp.text}")
     except Exception as e:
         logger.error(f"Failed to send telegram photo to {chat_id}: {e}")
 
@@ -131,8 +126,7 @@ def answer_callback_query(bot_token: str, callback_query_id: str, text: str = No
     if text:
         payload["text"] = text
     try:
-        with httpx.Client(timeout=30.0) as client:
-            client.post(url, json=payload)
+        requests.post(url, json=payload, timeout=30.0)
     except Exception as e:
         logger.error(f"Failed to answer callback query: {e}")
 
@@ -152,8 +146,7 @@ def edit_message_text(bot_token: str, chat_id: str, message_id: int, text: str, 
     if reply_markup is not None:
         payload["reply_markup"] = reply_markup
     try:
-        with httpx.Client(timeout=30.0) as client:
-            client.post(url, json=payload)
+        requests.post(url, json=payload, timeout=30.0)
     except Exception as e:
         logger.error(f"Failed to edit message text: {e}")
 
@@ -286,7 +279,6 @@ def delete_message(bot_token: str, chat_id: str, message_id: int):
         "message_id": message_id
     }
     try:
-        with httpx.Client(timeout=30.0) as client:
-            client.post(url, json=payload)
+        requests.post(url, json=payload, timeout=30.0)
     except Exception as e:
         logger.error(f"Failed to delete message: {e}")
